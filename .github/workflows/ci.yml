@@ -5,9 +5,17 @@ on:
   push:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -16,9 +24,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
-      - run: pnpm typecheck
-      - run: pnpm build
-      - run: pnpm test
-
+          # TODO: restore "cache: pnpm" once pnpm-lock.yaml is on develop
+      - name: Install dependencies
+        # TODO: switch to --frozen-lockfile once pnpm-lock.yaml is on develop
+        run: pnpm install --no-frozen-lockfile
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Build
+        run: pnpm build
+      - name: Test
+        run: pnpm test
