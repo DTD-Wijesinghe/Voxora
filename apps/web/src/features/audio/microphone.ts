@@ -100,12 +100,18 @@ export class MicrophoneManager {
     }
 
     const generation = ++this.requestGeneration;
-    this.pendingStart = this.acquireStream(generation);
-    return this.pendingStart;
+    const pending = this.acquireStream(generation);
+    this.pendingStart = pending;
+    pending.then(
+      () => this.clearPending(pending),
+      () => this.clearPending(pending),
+    );
+    return pending;
   }
 
   public stop(): void {
     this.requestGeneration += 1;
+    this.pendingStart = null;
     this.releaseStream();
   }
 
@@ -144,7 +150,11 @@ export class MicrophoneManager {
 
       const details = getErrorDetails(error);
       throw new MicrophoneError(details.code, details.message, error);
-    } finally {
+    }
+  }
+
+  private clearPending(pending: Promise<MediaStream>): void {
+    if (this.pendingStart === pending) {
       this.pendingStart = null;
     }
   }
