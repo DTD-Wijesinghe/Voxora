@@ -32,12 +32,19 @@ Open one provider session per direction: speaker A's audio goes to a session who
 | `GEMINI_API_KEY` | Only for `api-key` mode |
 | `GEMINI_LIVE_MODEL` | Defaults to `gemini-3.5-live-translate-preview` |
 | `GEMINI_CONNECT_TIMEOUT_MS` | Defaults to `10000` |
+| `GEMINI_MAX_RECONNECT_ATTEMPTS` | Defaults to `3` |
 
 Check your credentials with `pnpm --filter @voxora/api smoke:gemini [languageCode]`.
 
 Audio formats: input PCM16 16 kHz mono; translated output PCM16 **24 kHz** mono, variable chunk size.
 
-Known gaps: no automatic reconnect or session resumption yet, and `turnComplete`/`interrupted` signals are not forwarded because the shared contract has no event for them.
+Transcripts arrive as small fragments and Gemini does not mark them finished, so `final` is normally `false`. Append fragments rather than replacing them.
+
+## Reconnecting
+
+If Gemini drops the connection or announces it is going away, the session emits `status: reconnecting`, opens a new connection (resuming it when Gemini provided a handle), and emits `status: live` again. Up to 2 seconds of audio sent meanwhile is buffered and delivered afterwards. Retries back off from 500 ms; configuration errors are not retried. When the attempts run out, the session emits an `error` event followed by `status: ended`. Translation that was in progress at the moment of the drop may be lost.
+
+Known gap: `turnComplete`/`interrupted` signals are not forwarded because the shared contract has no event for them.
 
 ## Errors
 
