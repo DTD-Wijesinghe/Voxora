@@ -5,6 +5,9 @@ export type WebSocketAudioPayload = Parameters<WebSocket['send']>[0];
 export type AudioChunkEncoder = (chunk: AudioChunk) => WebSocketAudioPayload;
 export type AudioTransportStateCallback = (state: WebSocketAudioState) => void;
 export type AudioTransportErrorCallback = (error: Error) => void;
+export type AudioTransportMessage = string | ArrayBuffer | Blob;
+export type AudioTransportMessageCallback = (message: AudioTransportMessage) => void;
+export type WebSocketFactory = (url: string) => WebSocket;
 
 export interface WebSocketAudioTransportOptions {
   url: string;
@@ -13,6 +16,8 @@ export interface WebSocketAudioTransportOptions {
   maxSocketBufferedAmount?: number;
   onStateChange?: AudioTransportStateCallback;
   onError?: AudioTransportErrorCallback;
+  onMessage?: AudioTransportMessageCallback;
+  webSocketFactory?: WebSocketFactory;
 }
 
 export interface WebSocketAudioTransportDiagnostics {
@@ -36,6 +41,8 @@ export class WebSocketAudioTransport {
   private readonly maxSocketBufferedAmount: number;
   private readonly onStateChange?: AudioTransportStateCallback;
   private readonly onError?: AudioTransportErrorCallback;
+  private readonly onMessage?: AudioTransportMessageCallback;
+  private readonly webSocketFactory: WebSocketFactory;
   private socket: WebSocket | null = null;
   private pendingChunks: AudioChunk[] = [];
   private pendingConnection: PendingConnection | null = null;
@@ -69,6 +76,8 @@ export class WebSocketAudioTransport {
       options.maxSocketBufferedAmount ?? DEFAULT_MAX_SOCKET_BUFFERED_AMOUNT;
     this.onStateChange = options.onStateChange;
     this.onError = options.onError;
+    this.onMessage = options.onMessage;
+    this.webSocketFactory = options.webSocketFactory ?? ((url) => new WebSocket(url));
   }
 
   public getState(): WebSocketAudioState {
@@ -84,6 +93,28 @@ export class WebSocketAudioTransport {
 
   public clearPendingChunks(): void {
     this.pendingChunks = [];
+  }
+
+  public sendPayload(payload: WebSocketAudioPayload): boolean {
+    const socket = this.socket;
+    if (
+      typeof WebSocket === 'undefined' ||
+      socket === null ||
+      socket.readyState !== WebSocket.OPEN
+    ) {
+      return false;
+    }
+
+    try {
+      socket.send(payload);
+      return true;
+    } catch (error: unknown) {
+      this.reportError(
+        error instanceof Error ? error : new Error('Unable to send WebSocket payload.'),
+      );
+      this.disconnect();
+      return false;
+    }
   }
 
   public connect(): Promise<void> {
@@ -107,7 +138,8 @@ export class WebSocketAudioTransport {
       return Promise.reject(error);
     }
 
-    const socket = new WebSocket(this.url);
+    const socket = this.webSocketFactory(this.url);
+    socket.binaryType = 'arraybuffer';
     const generation = ++this.generation;
     this.socket = socket;
     this.setState('CONNECTING');
@@ -147,10 +179,16 @@ export class WebSocketAudioTransport {
         this.pendingConnection = null;
       }
     };
+    const handleMessage = (event: MessageEvent) => {
+      if (this.isCurrent(socket, generation)) {
+        this.onMessage?.(event.data as AudioTransportMessage);
+      }
+    };
 
     socket.onopen = handleOpen;
     socket.onerror = handleError;
     socket.onclose = handleClose;
+    socket.onmessage = handleMessage;
     return pendingConnection.promise;
   }
 
@@ -276,6 +314,7 @@ export class WebSocketAudioTransport {
     socket.onopen = null;
     socket.onerror = null;
     socket.onclose = null;
+    socket.onmessage = null;
   }
 
   private setState(state: WebSocketAudioState): void {

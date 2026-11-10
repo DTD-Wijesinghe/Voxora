@@ -3,6 +3,7 @@ import { AudioCaptureError, MicrophoneAudioCapture } from './audio-capture';
 import { MicrophoneError, MicrophoneManager } from './microphone';
 import type { AudioChunk } from './pcm';
 import { TranslatedAudioDevPanel } from './translated-audio-dev-panel';
+import { AudioSessionDevPanel } from './audio-session-dev-panel';
 
 export function MicrophoneDevPanel() {
   const manager = useRef(new MicrophoneManager()).current;
@@ -89,6 +90,7 @@ export function MicrophoneDevPanel() {
         </button>
       </div>
       <TranslatedAudioDevPanel />
+      <AudioSessionDevPanel />
     </section>
   );
 }
