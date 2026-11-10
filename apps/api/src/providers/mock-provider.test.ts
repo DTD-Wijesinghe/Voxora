@@ -76,7 +76,9 @@ describe('createTranslationProvider', () => {
     expect(() => createTranslationProvider({ TRANSLATION_PROVIDER: 'other' })).toThrow(TranslationProviderError);
   });
 
-  it('reports that Gemini is not implemented yet', () => {
-    expect(() => createTranslationProvider({ TRANSLATION_PROVIDER: 'gemini' })).toThrow(/not implemented/);
+  it('rejects Gemini when credentials are missing', () => {
+    expect(() => createTranslationProvider({ TRANSLATION_PROVIDER: 'gemini', GEMINI_AUTH: 'vertex' })).toThrow(
+      /GCP_PROJECT/,
+    );
   });
 });

@@ -1,5 +1,6 @@
 import type { TranslationProvider } from '@voxora/contracts';
 import { TranslationProviderError } from './errors.js';
+import { createGeminiTranslationProvider, readGeminiOptions } from './gemini-provider.js';
 import { createMockTranslationProvider } from './mock-provider.js';
 
 export { TranslationProviderError } from './errors.js';
@@ -18,10 +19,7 @@ export function createTranslationProvider(
     case 'mock':
       return createMockTranslationProvider();
     case 'gemini':
-      throw new TranslationProviderError(
-        'PROVIDER_CONFIG_INVALID',
-        'The Gemini provider is not implemented yet. Set TRANSLATION_PROVIDER=mock.',
-      );
+      return createGeminiTranslationProvider(readGeminiOptions(env));
     default:
       throw new TranslationProviderError(
         'PROVIDER_CONFIG_INVALID',
