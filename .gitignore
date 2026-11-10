@@ -5,6 +5,8 @@ build/
 .env
 .env.*
 !.env.example
+service-account*.json
+*-credentials.json
 coverage/
 .DS_Store
 .idea/
