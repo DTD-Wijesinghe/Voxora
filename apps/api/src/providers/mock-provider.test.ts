@@ -30,6 +30,7 @@ describe('createMockTranslationProvider', () => {
     const audio = events.filter((e) => e.type === 'audio');
     expect(audio.map((e) => e.sequence)).toEqual([0, 1]);
     expect(audio[0]?.pcm16.byteLength).toBe(3200);
+    expect(audio[0]?.sampleRate).toBe(16_000);
   });
 
   it('emits input and output transcripts after each phrase', async () => {

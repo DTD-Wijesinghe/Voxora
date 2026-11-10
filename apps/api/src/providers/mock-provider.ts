@@ -48,7 +48,8 @@ export function createMockTranslationProvider(
           }
 
           receivedChunks += 1;
-          emitLater({ type: 'audio', pcm16: pcm16.slice(0), sequence: outputSequence++ });
+          // Echoed input audio keeps the 16 kHz input rate.
+          emitLater({ type: 'audio', pcm16: pcm16.slice(0), sequence: outputSequence++, sampleRate: 16_000 });
 
           if (receivedChunks % chunksPerPhrase === 0) {
             phrase += 1;

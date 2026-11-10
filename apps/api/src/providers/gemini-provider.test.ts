@@ -84,6 +84,36 @@ describe('createGeminiTranslationProvider', () => {
     expect([...new Uint8Array(audio[0]!.pcm16)]).toEqual([1, 2, 3]);
   });
 
+  it('reports the sample rate of translated audio, defaulting to 24 kHz', async () => {
+    const { gemini, events } = await startSession();
+    gemini.message({
+      serverContent: {
+        modelTurn: {
+          parts: [
+            { inlineData: { data: 'AQI=', mimeType: 'audio/pcm;rate=24000' } },
+            { inlineData: { data: 'AQI=', mimeType: 'audio/pcm;rate=16000' } },
+            { inlineData: { data: 'AQI=' } },
+          ],
+        },
+      },
+    });
+    const rates = events.flatMap((e) => (e.type === 'audio' ? [e.sampleRate] : []));
+    expect(rates).toEqual([24_000, 16_000, 24_000]);
+  });
+
+  it('marks a caption fragment final when it ends a sentence', async () => {
+    const { gemini, events } = await startSession();
+    for (const text of ['Hola, mi nombre', ' es Pradin.', ' ¿Cómo', ' estás?']) {
+      gemini.message({ serverContent: { outputTranscription: { text } } });
+    }
+    expect(events.flatMap((e) => (e.type === 'output_transcript' ? [e.final] : []))).toEqual([
+      false,
+      true,
+      false,
+      true,
+    ]);
+  });
+
   it('rejects invalid language codes before connecting', async () => {
     const gemini = fakeGemini();
     await expect(startSession(gemini, 'Tamil')).rejects.toMatchObject({ code: 'UNSUPPORTED_LANGUAGE' });

@@ -7,8 +7,12 @@ import type { ProviderErrorCode } from './errors.js';
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-live-translate-preview';
 export const INPUT_AUDIO_MIME_TYPE = 'audio/pcm;rate=16000';
+/** Gemini's documented output rate, used when a chunk's MIME type omits it. */
+export const OUTPUT_SAMPLE_RATE = 24_000;
 
 const BCP47_PATTERN = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
+// The translate model never marks transcripts finished, so a sentence end closes a caption line.
+const SENTENCE_END = /[.!?。？！]["'”’)]?\s*$/;
 
 export type LiveSession = Pick<Session, 'sendRealtimeInput' | 'close'>;
 export type LiveConnect = (params: LiveConnectParameters) => Promise<LiveSession>;
@@ -110,23 +114,23 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
         const content = message.serverContent;
         if (!content) return;
 
-        if (content.inputTranscription?.text) {
-          onEvent({
-            type: 'input_transcript',
-            text: content.inputTranscription.text,
-            final: content.inputTranscription.finished ?? false,
-          });
+        const input = content.inputTranscription;
+        if (input?.text) {
+          onEvent({ type: 'input_transcript', text: input.text, final: isFinal(input.text, input.finished) });
         }
-        if (content.outputTranscription?.text) {
-          onEvent({
-            type: 'output_transcript',
-            text: content.outputTranscription.text,
-            final: content.outputTranscription.finished ?? false,
-          });
+        const output = content.outputTranscription;
+        if (output?.text) {
+          onEvent({ type: 'output_transcript', text: output.text, final: isFinal(output.text, output.finished) });
         }
         for (const part of content.modelTurn?.parts ?? []) {
           const data = part.inlineData?.data;
-          if (data) onEvent({ type: 'audio', pcm16: base64ToArrayBuffer(data), sequence: outputSequence++ });
+          if (!data) continue;
+          onEvent({
+            type: 'audio',
+            pcm16: base64ToArrayBuffer(data),
+            sequence: outputSequence++,
+            sampleRate: sampleRateOf(part.inlineData?.mimeType),
+          });
         }
       }
 
@@ -316,6 +320,16 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
       },
     );
   });
+}
+
+function isFinal(text: string, finished: boolean | undefined): boolean {
+  return finished ?? SENTENCE_END.test(text);
+}
+
+/** Reads the rate from a MIME type such as "audio/pcm;rate=24000". */
+function sampleRateOf(mimeType: string | undefined): number {
+  const rate = Number(/rate=(\d+)/.exec(mimeType ?? '')?.[1]);
+  return rate > 0 ? rate : OUTPUT_SAMPLE_RATE;
 }
 
 function sleep(ms: number): Promise<void> {

@@ -29,10 +29,15 @@ export interface TranslationProvider {
   }): Promise<{ sendAudio: (pcm16: ArrayBuffer) => Promise<void>; close: () => Promise<void> }>;
 }
 
+/**
+ * Transcript events are fragments: append them to the current caption line and
+ * start a new line after a fragment with `final: true`.
+ */
 export type TranslationEvent =
   | { type: 'input_transcript'; text: string; final: boolean }
   | { type: 'output_transcript'; text: string; final: boolean }
-  | { type: 'audio'; pcm16: ArrayBuffer; sequence: number }
+  /** Translated speech: PCM16 mono little-endian, variable length, at `sampleRate` Hz (Gemini: 24000). */
+  | { type: 'audio'; pcm16: ArrayBuffer; sequence: number; sampleRate: number }
   | { type: 'status'; status: SessionStatus }
   | { type: 'error'; code: string; message: string };
 
