@@ -15,6 +15,11 @@ export interface WebSocketAudioTransportOptions {
   onError?: AudioTransportErrorCallback;
 }
 
+export interface WebSocketAudioTransportDiagnostics {
+  queuedChunks: number;
+  droppedChunks: number;
+}
+
 interface PendingConnection {
   promise: Promise<void>;
   resolve: () => void;
@@ -36,6 +41,7 @@ export class WebSocketAudioTransport {
   private pendingConnection: PendingConnection | null = null;
   private generation = 0;
   private state: WebSocketAudioState = 'CLOSED';
+  private droppedChunks = 0;
 
   public constructor(options: WebSocketAudioTransportOptions) {
     if (!options.url) {
@@ -67,6 +73,17 @@ export class WebSocketAudioTransport {
 
   public getState(): WebSocketAudioState {
     return this.state;
+  }
+
+  public getDiagnostics(): WebSocketAudioTransportDiagnostics {
+    return {
+      queuedChunks: this.pendingChunks.length,
+      droppedChunks: this.droppedChunks,
+    };
+  }
+
+  public clearPendingChunks(): void {
+    this.pendingChunks = [];
   }
 
   public connect(): Promise<void> {
@@ -166,7 +183,7 @@ export class WebSocketAudioTransport {
 
   public disconnect(): void {
     this.generation += 1;
-    this.pendingChunks = [];
+    this.clearPendingChunks();
     this.rejectPendingConnection(new Error('WebSocket audio transport disconnected.'));
 
     const socket = this.socket;
@@ -191,11 +208,12 @@ export class WebSocketAudioTransport {
     if (this.socket !== null) {
       this.disconnect();
     }
-    this.pendingChunks = [];
+    this.clearPendingChunks();
   }
 
   private enqueueChunk(chunk: AudioChunk): boolean {
     if (this.pendingChunks.length >= this.maxBufferedChunks) {
+      this.droppedChunks += 1;
       return false;
     }
 
