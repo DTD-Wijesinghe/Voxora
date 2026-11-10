@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { MicrophoneDevPanel } from './features/audio/microphone-dev-panel';
 import './styles.css';
 
 function App() {
@@ -8,9 +9,9 @@ function App() {
       <h1>Voxora</h1>
       <p>Live voice-to-voice translation.</p>
       <button type="button">Create conversation</button>
+      {import.meta.env.DEV && <MicrophoneDevPanel />}
     </main>
   );
 }
 
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
-
