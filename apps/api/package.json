@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "echo API tests to be added"
+    "test": "vitest run"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
@@ -18,7 +18,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
-    "tsx": "^4.19.3"
+    "tsx": "^4.19.3",
+    "vitest": "^3.0.9"
   }
 }
 
