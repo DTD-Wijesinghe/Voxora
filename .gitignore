@@ -15,4 +15,7 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 cdk.out/
+# Playwright generated files
+playwright-report/
+test-results/
 
