@@ -5,7 +5,9 @@ import { BrandMark } from '../components/BrandMark';
 const API = import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(`${API}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
+  const headers = new Headers(init?.headers);
+  if (init?.body !== undefined && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  const r = await fetch(`${API}${path}`, { ...init, headers });
   if (!r.ok) throw new Error(await r.text());
   if (r.status === 204) return undefined as T;
   return r.json();
