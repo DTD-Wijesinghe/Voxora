@@ -24,15 +24,19 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
   const [editForm, setEditForm] = useState<UpdateAdminSessionRequest>({});
   const [error, setError] = useState('');
 
-  async function load() {
+  async function load(showError = true) {
     try {
       const headers = { Authorization: `Bearer ${authToken}` };
       const nextSessions = await apiFetch<AdminSession[]>('/api/admin/sessions', { headers });
       setSessions(nextSessions);
-    } catch { setError('Your admin session has expired. Please sign in again.'); }
+    } catch { if (showError) setError('Your admin session has expired. Please sign in again.'); }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+    const refreshTimer = window.setInterval(() => { void load(false); }, 3000);
+    return () => window.clearInterval(refreshTimer);
+  }, [authToken]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
