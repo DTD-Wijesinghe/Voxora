@@ -7,6 +7,7 @@ import { ConversationPage } from './features/conversation/ConversationPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { LoginPage } from './pages/LoginPage';
 import { UserDashboard } from './pages/UserDashboard';
+import { ThemeToggle } from './components/ThemeToggle';
 import { logout, type AuthSession } from './lib/api';
 import type { AppPage } from './types';
 import './styles.css';
@@ -20,7 +21,7 @@ const initialPage: AppPage = window.location.pathname === '/admin'
     ? 'join'
     : 'home';
 
-function App() {
+function RoutedApp() {
   const [page, setPage] = useState<AppPage>(initialPage);
   const [session, setSession] = useState<Session | null>(null);
   const [conversationRole, setConversationRole] = useState<'organizer' | 'attendee' | null>(null);
@@ -59,6 +60,10 @@ function App() {
       <HomePage onJoin={() => setPage('join')} onLogin={() => setPage('login')} />
     </>
   );
+}
+
+function App() {
+  return <><RoutedApp /><ThemeToggle /></>;
 }
 
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
