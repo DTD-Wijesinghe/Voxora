@@ -6,7 +6,6 @@ import { JoinSessionPage } from './pages/JoinSessionPage';
 import { ConversationPage } from './features/conversation/ConversationPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { MicrophoneDevPanel } from './features/audio/microphone-dev-panel';
-import { AdminDashboard } from './pages/AdminDashboard';
 import type { AppPage } from './types';
 import './styles.css';
 
@@ -35,7 +34,6 @@ function App() {
     return <ConversationPage session={session} onLeave={() => { setSession(null); setPage('home'); }} />;
   }
 
-  return <HomePage onJoin={() => setPage('join')} onAdmin={() => setPage('admin')} />;
   return (
     <>
       <HomePage onJoin={() => setPage('join')} onAdmin={() => setPage('admin')} />
