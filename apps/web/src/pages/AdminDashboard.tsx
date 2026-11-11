@@ -7,13 +7,16 @@ const API = import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`${API}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
   if (!r.ok) throw new Error(await r.text());
+  if (r.status === 204) return undefined as T;
   return r.json();
 }
 
 interface AdminDashboardProps { onBack: () => void; authToken: string; onLogout: () => void; onOpenSession: (session: AdminSession) => void; }
+interface AuditEntry { id: string; timestamp: string; action: string; sessionId?: string; metadata?: Record<string, string | number | boolean>; }
 
 export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: AdminDashboardProps) {
   const [sessions, setSessions] = useState<AdminSession[]>([]);
+  const [history, setHistory] = useState<AuditEntry[]>([]);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<CreateAdminSessionRequest>({ title: '', participantLimit: 10, expiresInMinutes: 60, mode: 'mix', sourceLanguage: 'si' });
@@ -21,7 +24,15 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
   const [error, setError] = useState('');
 
   async function load() {
-    try { setSessions(await apiFetch<AdminSession[]>('/api/admin/sessions', { headers: { Authorization: `Bearer ${authToken}` } })); } catch { setError('Your admin session has expired. Please sign in again.'); }
+    try {
+      const headers = { Authorization: `Bearer ${authToken}` };
+      const [nextSessions, nextHistory] = await Promise.all([
+        apiFetch<AdminSession[]>('/api/admin/sessions', { headers }),
+        apiFetch<AuditEntry[]>('/api/admin/history', { headers }),
+      ]);
+      setSessions(nextSessions);
+      setHistory(nextHistory);
+    } catch { setError('Your admin session has expired. Please sign in again.'); }
   }
 
   useEffect(() => { load(); }, []);
@@ -47,8 +58,11 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this session?')) return;
-    await apiFetch(`/api/admin/sessions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${authToken}` } });
-    load();
+    try {
+      setError('');
+      await apiFetch(`/api/admin/sessions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${authToken}` } });
+      await load();
+    } catch (err: any) { setError(err.message || 'Unable to delete the session.'); }
   }
 
   return (
@@ -74,6 +88,10 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
           <article><span>Total rooms</span><strong>{sessions.length}</strong><small>Managed from this account</small></article>
           <article><span>Participants</span><strong>{sessions.reduce((total, session) => total + session.participants.length, 0)}</strong><small>Across all rooms</small></article>
         </section>
+        <section className="admin-history" aria-labelledby="admin-history-title">
+          <div className="section-heading"><h2 id="admin-history-title">Recent activity</h2><span className="admin-history-security">Protected audit log</span></div>
+          {history.length === 0 ? <p className="admin-empty admin-empty--compact">No activity recorded yet.</p> : <div className="admin-history-list">{history.slice(0, 8).map((entry) => <div className="admin-history-row" key={entry.id}><strong>{entry.action.replaceAll('.', ' ')}</strong><time dateTime={entry.timestamp}>{new Date(entry.timestamp).toLocaleString()}</time></div>)}</div>}
+        </section>
         {error && <p className="form-error" role="alert">{error}</p>}
 
         {creating && (
@@ -89,10 +107,11 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
               <input className="field__control" type="number" min={5} max={1440} value={form.expiresInMinutes} onChange={e => setForm(f => ({ ...f, expiresInMinutes: Number(e.target.value) }))} />
             </label>
             <label className="field"><span className="field__label">Voice input mode</span>
-              <select className="field__control" value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value as SessionMode }))}><option value="mix">Mix mode — automatic language detection</option><option value="sinhala">Sinhala mode — Sinhala input only</option></select>
+              <select className="field__control" value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value as SessionMode }))}><option value="mix">Mix mode — detect the organizer’s spoken language</option><option value="sinhala">Sinhala mode — accept Sinhala speech only</option></select>
             </label>
-            <label className="field"><span className="field__label">Organizer source language</span>
-              <select className="field__control" value={form.sourceLanguage} onChange={e => setForm(f => ({ ...f, sourceLanguage: e.target.value }))}><option value="si">Sinhala</option><option value="en">English</option></select>
+            <label className="field"><span className="field__label">Organizer input language</span>
+              <select className="field__control" value={form.sourceLanguage} disabled={form.mode === 'mix'} onChange={e => setForm(f => ({ ...f, sourceLanguage: e.target.value }))}><option value="si">Sinhala</option><option value="en">English</option></select>
+              <span className="field__help">Sinhala mode uses this as the required organizer input language. Mix mode detects the spoken language automatically.</span>
             </label>
             <div className="admin-form-actions">
               <button className="button button--primary" type="submit">Create</button>
@@ -124,6 +143,7 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
                     <p className="admin-session-meta"><strong>Code:</strong> <code>{s.joinCode}</code></p>
                     <p className="admin-session-meta"><strong>Status:</strong> <span className={`status-badge status-badge--${s.status}`}>{s.status}</span></p>
                     <p className="admin-session-meta"><strong>Mode:</strong> {s.mode === 'sinhala' ? 'Sinhala only' : 'Mix / auto-detect'}</p>
+                    <p className="admin-session-meta"><strong>Organizer input:</strong> {s.mode === 'mix' ? 'Automatically detected' : s.sourceLanguage === 'si' ? 'Sinhala' : 'English'}</p>
                     <p className="admin-session-meta"><strong>Attendees:</strong> {s.participants.filter((participant) => !participant.isHost).length} / {s.participantLimit}</p>
                     <div className="admin-participants" aria-label={`Participants in ${s.title}`}><strong>Joined now</strong>{s.participants.map((participant) => <span key={participant.id} className="admin-participant">{participant.displayName}{participant.isHost ? ' · organizer' : ` · ${participant.targetLanguage}`}</span>)}</div>
                     <p className="admin-session-meta"><strong>Expires:</strong> {new Date(s.expiresAt).toLocaleString()}</p>

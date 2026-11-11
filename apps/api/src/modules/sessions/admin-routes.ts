@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { networkInterfaces } from 'os';
-import { adminSessions } from './store.js';
+import { adminSessions, persistAdminSessions } from './store.js';
 import { requireAdmin } from '../auth/routes.js';
+import { appendAudit, readAudit } from '../../storage/persistent-store.js';
 import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest, SessionStatus, SessionMode } from './store.js';
 
 /** Returns the active Wi-Fi or LAN IPv4 address, prioritizing real Wi-Fi/Ethernet subnets over virtual adapters (e.g. VirtualBox 192.168.56.x). */
@@ -40,6 +41,11 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     return reply.send(Array.from(adminSessions.values()));
   });
 
+  app.get('/api/admin/history', async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
+    return reply.send(readAudit(100));
+  });
+
   // GET /api/admin/sessions/:id – get single
   app.get<{ Params: { id: string } }>('/api/admin/sessions/:id', async (request, reply) => {
     if (!requireAdmin(request, reply)) return;
@@ -70,6 +76,8 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       sourceLanguage,
     };
     adminSessions.set(id, session);
+    persistAdminSessions();
+    appendAudit({ action: 'session.created', sessionId: id, metadata: { mode, sourceLanguage } });
     return reply.code(201).send(session);
   });
 
@@ -91,6 +99,8 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     if (mode !== undefined) session.mode = mode;
     if (sourceLanguage !== undefined) session.sourceLanguage = sourceLanguage;
     adminSessions.set(session.id, session);
+    persistAdminSessions();
+    appendAudit({ action: 'session.updated', sessionId: session.id });
     return reply.send(session);
   });
 
@@ -101,6 +111,8 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(404).send({ code: 'SESSION_NOT_FOUND', message: 'Session not found' });
     }
     adminSessions.delete(request.params.id);
+    persistAdminSessions();
+    appendAudit({ action: 'session.deleted', sessionId: request.params.id });
     return reply.code(204).send();
   });
 
@@ -128,6 +140,8 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       session.participants.push(participant);
       if (session.status === 'connecting') session.status = 'live';
       adminSessions.set(session.id, session);
+      persistAdminSessions();
+      appendAudit({ action: 'session.attendee_joined', sessionId: session.id, metadata: { language: targetLanguage } });
 
       return reply.send(session);
     },

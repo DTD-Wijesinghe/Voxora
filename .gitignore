@@ -10,6 +10,7 @@ service_account*.json
 *-credentials.json
 *_credentials.json
 coverage/
+.data/
 .DS_Store
 .idea/
 .vscode/*

@@ -2,6 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DeleteCommand, DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
+import { readPersistent, writePersistent } from '../../storage/persistent-store.js';
 
 export type AuthRole = 'admin' | 'user';
 export interface AuthUser { role: AuthRole; email: string; displayName: string; expiresAt: number; }
@@ -14,6 +15,17 @@ const useDynamoDb = process.env.AUTH_STORAGE === 'dynamodb';
 const usersTable = process.env.VOXORA_USERS_TABLE ?? 'voxora-users';
 const dynamo = useDynamoDb ? DynamoDBDocumentClient.from(new DynamoDBClient({})) : null;
 interface UserRecord { email: string; displayName: string; passwordHash: string; createdAt: string; }
+const storedUserRecords = readPersistent<UserRecord[]>('users.json', []);
+for (const record of storedUserRecords) registeredUsers.set(record.email, { passwordHash: record.passwordHash, displayName: record.displayName });
+
+function persistRegisteredUsers(): void {
+  writePersistent('users.json', Array.from(registeredUsers.entries()).map(([email, user]) => ({
+    email,
+    displayName: user.displayName,
+    passwordHash: user.passwordHash,
+    createdAt: new Date().toISOString(),
+  })));
+}
 
 async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString('hex');
@@ -50,7 +62,7 @@ export async function registerUser(email: string, password: string, displayName:
   if (useDynamoDb && dynamo) {
     const record: UserRecord = { email, displayName, passwordHash, createdAt: new Date().toISOString() };
     await dynamo.send(new PutCommand({ TableName: usersTable, Item: record, ConditionExpression: 'attribute_not_exists(email)' }));
-  } else registeredUsers.set(email, { passwordHash, displayName });
+  } else { registeredUsers.set(email, { passwordHash, displayName }); persistRegisteredUsers(); }
   return issueToken({ role: 'user', email, displayName });
 }
 
@@ -71,5 +83,5 @@ export async function hasRegisteredUser(email: string): Promise<boolean> {
 
 export async function deleteRegisteredUser(email: string): Promise<void> {
   if (useDynamoDb && dynamo) await dynamo.send(new DeleteCommand({ TableName: usersTable, Key: { email } }));
-  else registeredUsers.delete(email);
+  else { registeredUsers.delete(email); persistRegisteredUsers(); }
 }

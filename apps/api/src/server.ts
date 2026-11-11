@@ -13,7 +13,7 @@ config({ path: ['.env', '../../.env'], quiet: true });
 const app = Fastify({ logger: true });
 
 await app.register(cors, {
-  origin: true, // reflect the request origin so mobile and desktop both work
+  origin: process.env.WEB_ORIGIN ?? true,
   methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
 });
 await app.register(websocket);
