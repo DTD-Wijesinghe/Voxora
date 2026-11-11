@@ -22,7 +22,9 @@ await registerSessionRoutes(app);
 await registerAdminRoutes(app);
 await registerAudioRoutes(app);
 
-app.get('/health', async () => ({ status: 'ok', service: 'voxora-api' }));
+const health = async () => ({ status: 'ok', service: 'voxora-api' });
+app.get('/health', health);
+app.get('/api/health', health);
 
 const port = Number(process.env.PORT ?? 3000);
 await app.listen({ port, host: '0.0.0.0' });
