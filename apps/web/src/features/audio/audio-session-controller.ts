@@ -113,7 +113,13 @@ export class AudioSessionController {
     if (this.pendingStart !== null) {
       return this.pendingStart;
     }
-    if (this.state === 'CAPTURING' || this.state === 'LISTENING' || this.state === 'MIC_MUTED') {
+    if (this.state === 'LISTENING') {
+      if (this.playbackEnabled) {
+        return this.playback.start();
+      }
+      return;
+    }
+    if (this.state === 'CAPTURING' || this.state === 'MIC_MUTED') {
       return;
     }
 
