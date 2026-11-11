@@ -59,3 +59,17 @@ body { background: #0b1724; }
 .status-badge--connecting { background: #fef3c7; color: #92400e; }
 .status-badge--ended { background: #fee2e2; color: #991b1b; }
 .status-badge--reconnecting { background: #ede9fe; color: #5b21b6; }
+.admin-header-actions { display: flex; gap: .5rem; align-items: center; }
+.login-layout { max-width: 1030px; min-height: calc(100vh - 78px); margin: 0 auto; padding: 75px 6vw; display: grid; grid-template-columns: 1fr 410px; gap: 90px; align-items: center; }
+.login-intro h1, .user-dashboard h1 { margin: 15px 0 22px; color: #102a43; font-size: clamp(38px, 5vw, 62px); line-height: 1.02; letter-spacing: -.05em; }
+.login-intro h1 em, .user-dashboard h1 em { color: #d9735a; font-style: normal; }
+.login-intro > p, .user-dashboard__hero > p { max-width: 430px; color: #69798d; font-size: 16px; line-height: 1.65; }
+.login-card { padding: 30px; border: 1px solid #e3e9f0; border-radius: 20px; background: rgba(255,255,255,.88); box-shadow: 0 22px 60px rgba(24,48,76,.08); }
+.login-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; padding: .3rem; margin-bottom: 1.5rem; border-radius: .7rem; background: #eef3f7; }
+.login-switcher button { border: 0; border-radius: .5rem; padding: .65rem; color: #748397; background: transparent; font-weight: 700; cursor: pointer; }
+.login-switcher button.login-switcher__active { color: #fff; background: #0f766e; box-shadow: 0 6px 14px rgba(15,118,110,.2); }
+.login-card h2 { color: #102a43; font-size: 21px; }.login-card__hint { margin: .35rem 0 1.4rem; color: #8b98a8; font-size: 12px; line-height: 1.5; }
+.user-shell { min-height: 100vh; background: radial-gradient(circle at 85% 12%, rgba(242,194,179,.22), transparent 24rem), #f7f9fc; }
+.user-dashboard { max-width: 1100px; margin: 0 auto; padding: 80px 6vw; }.user-dashboard__hero { padding: 3rem; border-radius: 24px; background: linear-gradient(135deg, #e5f3f0, #fff4ef); box-shadow: 0 22px 60px rgba(24,48,76,.07); }.user-dashboard__hero > p { margin-bottom: 1.7rem; }
+.user-dashboard__cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin-top: 1.2rem; }.workspace-card { padding: 1.5rem; border: 1px solid #e3e9f0; border-radius: 18px; background: rgba(255,255,255,.86); }.workspace-card h2 { margin: 1rem 0 .5rem; color: #102a43; font-size: 1.1rem; }.workspace-card p { min-height: 3rem; margin-bottom: 1.2rem; color: #69798d; line-height: 1.6; font-size: .9rem; }
+@media (max-width: 720px) { .login-layout { grid-template-columns: 1fr; gap: 2rem; padding-top: 45px; } .user-dashboard { padding-top: 45px; }.user-dashboard__hero { padding: 2rem; }.user-dashboard__cards { grid-template-columns: 1fr; }.admin-header-actions { margin-left: auto; } }

@@ -2,16 +2,16 @@ import { BrandMark } from '../components/BrandMark';
 
 interface HomePageProps {
   onJoin: () => void;
-  onAdmin: () => void;
+  onLogin: () => void;
 }
 
-export function HomePage({ onJoin, onAdmin }: HomePageProps) {
+export function HomePage({ onJoin, onLogin }: HomePageProps) {
   return (
     <div className="marketing-shell">
       <header className="topbar">
         <BrandMark />
         <span className="topbar__tag">Live translation, made human</span>
-        <button className="button button--ghost button--small" type="button" onClick={onAdmin}>Admin</button>
+        <button className="button button--ghost button--small" type="button" onClick={onLogin}>Login</button>
         <button className="button button--ghost topbar__action" type="button" onClick={onJoin}>Join a session</button>
       </header>
       <main className="hero">

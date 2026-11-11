@@ -1,0 +1,7 @@
+import { BrandMark } from '../components/BrandMark';
+
+interface UserDashboardProps { displayName: string; onJoin: () => void; onLogout: () => void; }
+
+export function UserDashboard({ displayName, onJoin, onLogout }: UserDashboardProps) {
+  return <div className="user-shell"><header className="topbar"><BrandMark /><span className="topbar__tag">User workspace</span><button className="button button--ghost button--small topbar__action" type="button" onClick={onLogout}>Sign out</button></header><main className="user-dashboard"><div className="user-dashboard__hero"><span className="eyebrow">Your workspace</span><h1>Welcome, <em>{displayName}</em></h1><p>Join a live translated conversation or start one with your team.</p><button className="button button--primary button--large" type="button" onClick={onJoin}>Join a session <span aria-hidden="true">→</span></button></div><div className="user-dashboard__cards"><article className="workspace-card"><span className="card-icon">✦</span><h2>Join with a code</h2><p>Enter the session code shared by your host and choose the language you want to hear.</p><button className="button button--ghost" type="button" onClick={onJoin}>Open join screen</button></article><article className="workspace-card"><span className="card-icon">◈</span><h2>Live translation</h2><p>Your microphone and translated audio controls are available inside the conversation room.</p></article></div></main></div>;
+}

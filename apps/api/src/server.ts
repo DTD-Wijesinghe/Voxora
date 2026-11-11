@@ -4,6 +4,7 @@ import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import { registerSessionRoutes } from './modules/sessions/routes.js';
 import { registerAdminRoutes } from './modules/sessions/admin-routes.js';
+import { registerAuthRoutes } from './modules/auth/routes.js';
 
 // pnpm runs the API from apps/api, so also look for the repository-root .env.
 config({ path: ['.env', '../../.env'], quiet: true });
@@ -15,6 +16,7 @@ await app.register(cors, {
   methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
 });
 await app.register(websocket);
+await registerAuthRoutes(app);
 await registerSessionRoutes(app);
 await registerAdminRoutes(app);
 

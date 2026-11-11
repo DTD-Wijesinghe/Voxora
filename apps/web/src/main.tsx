@@ -5,7 +5,9 @@ import { HomePage } from './pages/HomePage';
 import { JoinSessionPage } from './pages/JoinSessionPage';
 import { ConversationPage } from './features/conversation/ConversationPage';
 import { AdminDashboard } from './pages/AdminDashboard';
-import { MicrophoneDevPanel } from './features/audio/microphone-dev-panel';
+import { LoginPage } from './pages/LoginPage';
+import { UserDashboard } from './pages/UserDashboard';
+import { logout, type AuthSession } from './lib/api';
 import type { AppPage } from './types';
 import './styles.css';
 
@@ -13,7 +15,7 @@ import './styles.css';
 const params = new URLSearchParams(window.location.search);
 const initialCode = params.get('code') ?? undefined;
 const initialPage: AppPage = window.location.pathname === '/admin'
-  ? 'admin'
+  ? 'login'
   : initialCode
     ? 'join'
     : 'home';
@@ -21,9 +23,25 @@ const initialPage: AppPage = window.location.pathname === '/admin'
 function App() {
   const [page, setPage] = useState<AppPage>(initialPage);
   const [session, setSession] = useState<Session | null>(null);
+  const [auth, setAuth] = useState<AuthSession | null>(null);
 
-  if (page === 'admin') {
-    return <AdminDashboard onBack={() => setPage('home')} />;
+  function signOut() {
+    if (auth) void logout(auth.token).catch(() => undefined);
+    setAuth(null);
+    setSession(null);
+    setPage('home');
+  }
+
+  if (page === 'login') {
+    return <LoginPage onBack={() => setPage('home')} onAuthenticated={(nextAuth) => { setAuth(nextAuth); setPage(nextAuth.user.role === 'admin' ? 'admin' : 'user'); }} />;
+  }
+
+  if (page === 'admin' && auth?.user.role === 'admin') {
+    return <AdminDashboard authToken={auth.token} onBack={() => setPage('home')} onLogout={signOut} />;
+  }
+
+  if (page === 'user' && auth?.user.role === 'user') {
+    return <UserDashboard displayName={auth.user.displayName} onJoin={() => setPage('join')} onLogout={signOut} />;
   }
 
   if (page === 'join') {
@@ -36,8 +54,7 @@ function App() {
 
   return (
     <>
-      <HomePage onJoin={() => setPage('join')} onAdmin={() => setPage('admin')} />
-      {import.meta.env.DEV && <MicrophoneDevPanel />}
+      <HomePage onJoin={() => setPage('join')} onLogin={() => setPage('login')} />
     </>
   );
 }
