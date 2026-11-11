@@ -30,9 +30,17 @@ export async function createSession(input: CreateSessionRequest): Promise<JoinRe
   }
 }
 
-// Provisional adapter: the current backend has no agreed join-session endpoint.
 export async function joinSession(input: CreateSessionRequest & { joinCode: string }): Promise<JoinResult> {
-  return { session: createMockSession(input, input.joinCode.toUpperCase()), isMock: true };
+  try {
+    const session = await request<Session>(`/api/sessions/${encodeURIComponent(input.joinCode)}/join`, {
+      method: 'POST',
+      body: JSON.stringify({ displayName: input.displayName, targetLanguage: input.targetLanguage }),
+    });
+    return { session, isMock: false };
+  } catch (error) {
+    console.warn('API join session failed, falling back to local session:', error);
+    return { session: createMockSession(input, input.joinCode.toUpperCase()), isMock: true };
+  }
 }
 
 // Provisional until the backend exposes a participant-preference endpoint.
