@@ -9,6 +9,10 @@ export async function login(input: { email: string; password: string; displayNam
   return request<AuthSession>('/api/auth/login', { method: 'POST', body: JSON.stringify(input) });
 }
 
+export async function register(input: { email: string; password: string; displayName: string }): Promise<AuthSession> {
+  return request<AuthSession>('/api/auth/register', { method: 'POST', body: JSON.stringify(input) });
+}
+
 export async function logout(token: string): Promise<void> {
   await request<void>('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
 }

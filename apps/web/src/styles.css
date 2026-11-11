@@ -65,6 +65,9 @@ body { background: #0b1724; }
 .login-intro h1 em, .user-dashboard h1 em { color: #d9735a; font-style: normal; }
 .login-intro > p, .user-dashboard__hero > p { max-width: 430px; color: #69798d; font-size: 16px; line-height: 1.65; }
 .login-card { padding: 30px; border: 1px solid #e3e9f0; border-radius: 20px; background: rgba(255,255,255,.88); box-shadow: 0 22px 60px rgba(24,48,76,.08); }
+.login-mode-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; padding: .3rem; margin-bottom: 1.5rem; border-radius: .7rem; background: #eef3f7; }
+.login-mode-switcher button { border: 0; border-radius: .5rem; padding: .65rem; color: #748397; background: transparent; font-weight: 700; cursor: pointer; }
+.login-mode-switcher button.login-mode-switcher__active { color: #fff; background: #0f766e; box-shadow: 0 6px 14px rgba(15,118,110,.2); }
 .login-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; padding: .3rem; margin-bottom: 1.5rem; border-radius: .7rem; background: #eef3f7; }
 .login-switcher button { border: 0; border-radius: .5rem; padding: .65rem; color: #748397; background: transparent; font-weight: 700; cursor: pointer; }
 .login-switcher button.login-switcher__active { color: #fff; background: #0f766e; box-shadow: 0 6px 14px rgba(15,118,110,.2); }

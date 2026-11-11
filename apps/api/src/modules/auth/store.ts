@@ -8,6 +8,7 @@ export interface AuthUser {
 }
 
 const tokens = new Map<string, AuthUser>();
+const registeredUsers = new Map<string, { password: string; displayName: string }>();
 const TOKEN_TTL_MS = 8 * 60 * 60 * 1000;
 
 export function issueToken(user: Omit<AuthUser, 'expiresAt'>): { token: string; user: AuthUser } {
@@ -29,4 +30,18 @@ export function getUserFromToken(token: string | undefined): AuthUser | null {
 
 export function revokeToken(token: string | undefined): void {
   if (token) tokens.delete(token);
+}
+
+export function registerUser(email: string, password: string, displayName: string): { token: string; user: AuthUser } {
+  registeredUsers.set(email, { password, displayName });
+  return issueToken({ role: 'user', email, displayName });
+}
+
+export function isRegisteredUser(email: string, password: string): { displayName: string } | null {
+  const user = registeredUsers.get(email);
+  return user && user.password === password ? { displayName: user.displayName } : null;
+}
+
+export function hasRegisteredUser(email: string): boolean {
+  return registeredUsers.has(email);
 }
