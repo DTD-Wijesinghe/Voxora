@@ -11,6 +11,8 @@
     "smoke:gemini": "tsx scripts/gemini-smoke.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.943.0",
+    "@aws-sdk/lib-dynamodb": "^3.943.0",
     "@fastify/cors": "^11.0.1",
     "@fastify/websocket": "^11.0.2",
     "@google/genai": "^3.0.0",

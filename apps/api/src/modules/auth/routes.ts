@@ -30,7 +30,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
     const userEmail = process.env.USER_EMAIL?.trim().toLowerCase();
     const isAdmin = normalizedEmail === adminEmail && password === process.env.ADMIN_PASSWORD;
-    const registeredUser = isRegisteredUser(normalizedEmail, password);
+    const registeredUser = await isRegisteredUser(normalizedEmail, password);
     const isUser = (normalizedEmail === userEmail && password === process.env.USER_PASSWORD) || registeredUser !== null;
     const role: AuthRole = isAdmin ? 'admin' : 'user';
 
@@ -55,10 +55,10 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     if (!email.includes('@') || typeof password !== 'string' || password.length < 8 || displayName.length < 1 || displayName.length > 40) {
       return reply.code(400).send({ code: 'INVALID_REGISTRATION', message: 'Enter a valid name, email, and password of at least 8 characters.' });
     }
-    if (email === adminEmail || email === userEmail || hasRegisteredUser(email)) {
+    if (email === adminEmail || email === userEmail || await hasRegisteredUser(email)) {
       return reply.code(409).send({ code: 'ACCOUNT_EXISTS', message: 'An account with this email already exists.' });
     }
-    return reply.code(201).send(registerUser(email, password, displayName));
+    return reply.code(201).send(await registerUser(email, password, displayName));
   });
 
   app.post('/api/auth/logout', async (request, reply) => {
