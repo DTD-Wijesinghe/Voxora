@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest } from '@voxora/contracts';
 import { BrandMark } from '../components/BrandMark';
 
-const API = import.meta.env.VITE_API_BASE_URL ?? `http://${window.location.hostname}:3000`;
+const API = import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`${API}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });

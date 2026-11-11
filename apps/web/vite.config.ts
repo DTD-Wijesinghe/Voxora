@@ -5,6 +5,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0', // expose to local network so mobile devices can connect
+    proxy: {
+      '/api': { target: 'http://localhost:3000', ws: true },
+    },
   },
   test: {
     environment: 'jsdom',

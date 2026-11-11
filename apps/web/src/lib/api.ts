@@ -3,7 +3,7 @@ import type { JoinResult } from '../types';
 
 export interface AuthSession { token: string; user: { role: 'admin' | 'user'; email: string; displayName: string; expiresAt: number }; }
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? `http://${window.location.hostname}:3000`;
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 
 export async function login(input: { email: string; password: string; displayName?: string }): Promise<AuthSession> {
   return request<AuthSession>('/api/auth/login', { method: 'POST', body: JSON.stringify(input) });

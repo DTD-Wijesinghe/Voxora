@@ -23,7 +23,7 @@ export function ConversationPage({ session, onLeave }: ConversationPageProps) {
 
   const status: UiSessionStatus = diagnostics.state === 'ERROR' ? 'error' : diagnostics.state === 'CONNECTING' || diagnostics.state === 'AUTHENTICATING' ? 'reconnecting' : diagnostics.state === 'STOPPED' || diagnostics.state === 'IDLE' ? 'connecting' : diagnostics.state === 'MIC_MUTED' ? 'muted' : 'live';
   const participantId = session.participants.at(-1)?.id ?? session.participants[0]?.id ?? session.id;
-  const websocketUrl = import.meta.env.VITE_AUDIO_WS_URL ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:3000/api/audio`;
+  const websocketUrl = import.meta.env.VITE_AUDIO_WS_URL ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/audio`;
 
   useEffect(() => {
     const nextController = new AudioSessionController({
