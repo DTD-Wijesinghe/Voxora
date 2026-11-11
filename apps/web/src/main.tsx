@@ -1,6 +1,5 @@
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-<<<<<<< HEAD
 import type { Session } from '@voxora/contracts';
 import { HomePage } from './pages/HomePage';
 import { JoinSessionPage } from './pages/JoinSessionPage';
