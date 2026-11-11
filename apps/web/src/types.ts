@@ -1,6 +1,6 @@
 import type { Session, SessionStatus } from '@voxora/contracts';
 
-export type AppPage = 'home' | 'join' | 'conversation';
+export type AppPage = 'home' | 'join' | 'conversation' | 'admin';
 export type UiSessionStatus = SessionStatus | 'muted' | 'error';
 
 export interface Caption {

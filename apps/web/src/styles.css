@@ -38,3 +38,24 @@ body { background: #0b1724; }
 .join-card { border-color: #294157; background: #122235; box-shadow: 0 22px 60px rgba(0, 0, 0, .28); }.card-icon { color: #172033; background: #f5ad2f; }.join-card__header p, .optional { color: #9eafbe; }.field__label { color: #e3eaf0; }.field__control { color: #f8fafc; border-color: #385066; background: #0f1d2d; }.field__control::placeholder { color: #7890a4; }.field__control:focus { border-color: #f5ad2f; box-shadow: 0 0 0 3px rgba(245, 173, 47, .16); }.form-error { color: #ffae9f; }
 .conversation-shell { background: #0b1724; }.session-chip { color: #9eafbe; border-color: #385066; background: #122235; }.session-chip strong { color: #f5ad2f; }.session-chip button { color: #f5ad2f; }.status-pill { color: #172033; background: #f5ad2f; }.status-pill--reconnecting { color: #172033; background: #f7c665; }.status-pill--muted, .status-pill--error { color: #fff; background: #a85445; }.side-panel { border-color: #294157; background: #0f1d2d; }.section-heading h2, .participant__details strong { color: #e7eef4; }.count-badge { color: #172033; background: #f5ad2f; }.participant__details small { color: #9eafbe; }.side-panel .field__control { background: #122235; }.side-panel__tip { color: #b6c3d0; background: #172f42; }.side-panel__tip span { color: #f5ad2f; }.caption-panel, .captions-panel { border-color: #294157; background: #122235; box-shadow: 0 15px 40px rgba(0, 0, 0, .22); }.live-indicator { color: #f5ad2f; }.empty-state { color: #9eafbe; }.empty-state__icon { color: #172033; background: #f5ad2f; }.caption { background: #1a2d40; }.caption--translated { background: #193e42; }.caption__meta strong, .caption p { color: #e7eef4; }.caption__meta span { color: #9eafbe; }.mic-button { color: #172033; background: #f5ad2f; box-shadow: 0 9px 20px rgba(245, 173, 47, .2); }.mic-button--muted { color: #fff; background: #a85445; }.audio-hint__dot { color: #f5ad2f; }
 
+
+/* Admin Dashboard */
+.admin-shell { min-height: 100vh; background: var(--surface, #f7f9fc); }
+.admin-main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+.admin-create-form { background: var(--surface-raised, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 1rem; padding: 1.5rem; margin-bottom: 2rem; }
+.admin-create-form h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
+.admin-form-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.admin-sessions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+.admin-session-card { background: var(--surface-raised, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 1rem; padding: 1.25rem; display: flex; gap: 1.25rem; align-items: flex-start; }
+.admin-session-card__qr img { border-radius: 0.5rem; border: 1px solid var(--border, #e5e7eb); }
+.admin-session-card__info { flex: 1; min-width: 0; }
+.admin-session-card__info h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+.admin-session-meta { font-size: 0.82rem; color: var(--text-muted, #6b7280); margin: 0.2rem 0; }
+.admin-session-url { word-break: break-all; }
+.admin-empty { color: var(--text-muted, #6b7280); text-align: center; padding: 3rem; }
+.admin-edit-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.status-badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.status-badge--live { background: #d1fae5; color: #065f46; }
+.status-badge--connecting { background: #fef3c7; color: #92400e; }
+.status-badge--ended { background: #fee2e2; color: #991b1b; }
+.status-badge--reconnecting { background: #ede9fe; color: #5b21b6; }
