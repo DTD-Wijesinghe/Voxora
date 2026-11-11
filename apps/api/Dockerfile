@@ -17,6 +17,7 @@ COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages ./packages
 COPY --from=build /app/apps/api/package.json /app/apps/api/package.json
+COPY --from=build /app/apps/api/node_modules /app/apps/api/node_modules
 COPY --from=build /app/apps/api/dist /app/apps/api/dist
 EXPOSE 3000
 CMD ["node", "apps/api/dist/server.js"]
