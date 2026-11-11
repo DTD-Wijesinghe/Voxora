@@ -11,5 +11,5 @@ Date: 2026-11-11
 - Admin routes are not protected.
 - CORS is permissive for local development.
 - AWS infrastructure is not implemented; `infra/README.md` is a plan only.
-- No end-to-end browser test suite is present.
+- Playwright end-to-end coverage now covers the home page and join-page validation. Admin, QR attendee, live audio, and two-browser conversation flows still need dedicated coverage.
 - The repository's `develop` branch is stale relative to `main`; reconcile it before using it as the integration base.
