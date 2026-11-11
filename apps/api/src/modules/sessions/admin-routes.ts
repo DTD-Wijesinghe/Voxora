@@ -3,11 +3,25 @@ import { networkInterfaces } from 'os';
 import { adminSessions } from './store.js';
 import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest, SessionStatus } from './store.js';
 
-/** Returns the machine's first non-loopback IPv4 address so QR codes work from mobile devices on the same network. */
+/** Returns the active Wi-Fi or LAN IPv4 address, prioritizing real Wi-Fi/Ethernet subnets over virtual adapters (e.g. VirtualBox 192.168.56.x). */
 function getLocalIp(): string {
-  for (const ifaces of Object.values(networkInterfaces())) {
+  if (process.env.HOST_IP) return process.env.HOST_IP;
+  const interfaces = networkInterfaces();
+  
+  // Prioritize active Wi-Fi interfaces
+  for (const [name, ifaces] of Object.entries(interfaces)) {
+    if (/wi-?fi|wlan/i.test(name)) {
+      const match = ifaces?.find(i => i.family === 'IPv4' && !i.internal);
+      if (match) return match.address;
+    }
+  }
+
+  // Fallback: search non-internal IPv4 skipping typical host-only/virtual adapter subnets (192.168.56.x)
+  for (const ifaces of Object.values(interfaces)) {
     for (const iface of ifaces ?? []) {
-      if (iface.family === 'IPv4' && !iface.internal) return iface.address;
+      if (iface.family === 'IPv4' && !iface.internal && !iface.address.startsWith('192.168.56.')) {
+        return iface.address;
+      }
     }
   }
   return '127.0.0.1';
