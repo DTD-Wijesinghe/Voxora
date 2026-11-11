@@ -19,6 +19,7 @@ export type AudioSessionState =
   | 'CONNECTING'
   | 'AUTHENTICATING'
   | 'CAPTURING'
+  | 'LISTENING'
   | 'MIC_MUTED'
   | 'SPEAKER_MUTED'
   | 'STOPPED'
@@ -44,6 +45,7 @@ export interface AudioSessionControllerOptions {
   microphone?: MicrophoneManager;
   playback: Omit<ConstructorParameters<typeof TranslatedAudioPlayback>[0], 'onStateChange' | 'onError'>;
   playbackEnabled?: boolean;
+  captureEnabled?: boolean;
   webSocketFactory?: WebSocketFactory;
   onStateChange?: (diagnostics: AudioSessionDiagnostics) => void;
   onError?: (error: Error) => void;
@@ -61,6 +63,7 @@ export class AudioSessionController {
   private readonly onError?: (error: Error) => void;
   private readonly onTranscript?: AudioSessionControllerOptions['onTranscript'];
   private readonly playbackEnabled: boolean;
+  private readonly captureEnabled: boolean;
   private state: AudioSessionState = 'IDLE';
   private connectionState: WebSocketAudioState = 'CLOSED';
   private handshakeComplete = false;
@@ -83,6 +86,7 @@ export class AudioSessionController {
     this.onError = options.onError;
     this.onTranscript = options.onTranscript;
     this.playbackEnabled = options.playbackEnabled ?? true;
+    this.captureEnabled = options.captureEnabled ?? true;
     this.playback = new TranslatedAudioPlayback({
       ...options.playback,
       onStateChange: () => this.publishDiagnostics(),
@@ -109,7 +113,7 @@ export class AudioSessionController {
     if (this.pendingStart !== null) {
       return this.pendingStart;
     }
-    if (this.state === 'CAPTURING' || this.state === 'MIC_MUTED') {
+    if (this.state === 'CAPTURING' || this.state === 'LISTENING' || this.state === 'MIC_MUTED') {
       return;
     }
 
@@ -201,9 +205,11 @@ export class AudioSessionController {
         throw new Error('Unable to send the audio session handshake.');
       }
       await this.waitForHandshake(generation);
-      await this.capture.start();
+      if (this.captureEnabled) {
+        await this.capture.start();
+      }
       this.assertCurrent(generation);
-      this.setState(this.microphoneMuted ? 'MIC_MUTED' : 'CAPTURING');
+      this.setState(this.captureEnabled ? (this.microphoneMuted ? 'MIC_MUTED' : 'CAPTURING') : 'LISTENING');
     } catch (error: unknown) {
       if (this.isCurrent(generation)) {
         this.cleanupAfterFailure();
