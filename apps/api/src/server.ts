@@ -1,9 +1,12 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import { registerSessionRoutes } from './modules/sessions/routes.js';
 import { registerAdminRoutes } from './modules/sessions/admin-routes.js';
+
+// pnpm runs the API from apps/api, so also look for the repository-root .env.
+config({ path: ['.env', '../../.env'], quiet: true });
 
 const app = Fastify({ logger: true });
 

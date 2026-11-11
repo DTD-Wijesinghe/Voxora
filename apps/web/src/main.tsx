@@ -5,6 +5,7 @@ import { HomePage } from './pages/HomePage';
 import { JoinSessionPage } from './pages/JoinSessionPage';
 import { ConversationPage } from './features/conversation/ConversationPage';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { MicrophoneDevPanel } from './features/audio/microphone-dev-panel';
 import type { AppPage } from './types';
 import './styles.css';
 
@@ -34,6 +35,12 @@ function App() {
   }
 
   return <HomePage onJoin={() => setPage('join')} onAdmin={() => setPage('admin')} />;
+  return (
+    <>
+      <HomePage onJoin={() => setPage('join')} />
+      {import.meta.env.DEV && <MicrophoneDevPanel />}
+    </>
+  );
 }
 
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
