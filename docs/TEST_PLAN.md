@@ -73,4 +73,34 @@ Status values: **Pass**, **Fail**, **Not started**, **Blocked**
 - **Expected result:**
 - **Actual result:**
 - **Environment:** browser, device, branch and commit
-- **Screenshot or log:**
+- **Screenshot or log:** 
+
+## 8. Regression run log
+
+### Run 1: 11 November 2026
+
+| Item | Value |
+|---|---|
+| Code tested | `main` at 59703c9 plus the Playwright branch (now merged into `main` at 9e85355) |
+| Tester | Gimhani (Member 6) |
+| Environment | Windows, Node v22.17.0, Chromium |
+| Network | Normal |
+| Language pair | Not applicable (no translation tested yet) |
+
+| ID | Test | Expected result | Actual result | Status |
+|---|---|---|---|---|
+| TC-007 | `pnpm install --frozen-lockfile` | Finishes with no lockfile error | Finished with no errors | Pass |
+| TC-008 | `pnpm typecheck` | No errors | No errors | Pass |
+| TC-009 | `pnpm build` | Contracts, API and web all build | All three built | Pass |
+| TC-010 | `pnpm test` (unit tests) | All tests pass | API: 27 passed, web: 3 passed, contracts: no tests | Pass |
+| TC-011 | `pnpm exec playwright test` (home page) | 3 tests pass | 3 passed | Pass |
+| TC-012 | CI on GitHub (Playwright PR #12, main run #24) | Green tick | Green tick | Pass |
+
+### Coverage gaps found
+
+| # | Gap | Module owner |
+|---|---|---|
+| G-1 | No automated tests for session features (create, join, leave, end, invalid code, expiry, duplicate join) | Member 4 |
+| G-2 | `packages/contracts` test script is only a placeholder message | Shared |
+| G-3 | End-to-end tests cover only the home page. Join flow, admin dashboard and QR join are not covered yet. | Member 6 |
+| G-4 | No tests yet for security rules (unauthorized access, rate limiting) | Member 5 |
