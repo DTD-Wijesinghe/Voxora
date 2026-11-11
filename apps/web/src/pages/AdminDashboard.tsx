@@ -61,6 +61,19 @@ export function AdminDashboard({ onBack, authToken, onLogout }: AdminDashboardPr
       </header>
 
       <main className="admin-main">
+        <section className="admin-hero">
+          <div>
+            <span className="eyebrow">Control centre</span>
+            <h1>Run every conversation with confidence.</h1>
+            <p>Create secure rooms, share the QR code, and monitor participation from one focused workspace.</p>
+          </div>
+          <div className="admin-hero__mark" aria-hidden="true">⌁</div>
+        </section>
+        <section className="admin-stats" aria-label="Session summary">
+          <article><span>Active rooms</span><strong>{sessions.filter((session) => session.status === 'live' || session.status === 'connecting').length}</strong><small>Ready for participants</small></article>
+          <article><span>Total rooms</span><strong>{sessions.length}</strong><small>Managed from this account</small></article>
+          <article><span>Participants</span><strong>{sessions.reduce((total, session) => total + session.participants.length, 0)}</strong><small>Across all rooms</small></article>
+        </section>
         {error && <p className="form-error" role="alert">{error}</p>}
 
         {creating && (

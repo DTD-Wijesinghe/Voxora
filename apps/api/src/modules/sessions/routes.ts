@@ -4,6 +4,13 @@ import { adminSessions } from './store.js';
 
 const sessions = new Map<string, Session>();
 
+export function findSession(idOrCode: string): Session | import('@voxora/contracts').AdminSession | undefined {
+  const normalized = idOrCode.toUpperCase();
+  return sessions.get(idOrCode) ?? Array.from(adminSessions.values()).find(
+    (session) => session.id === idOrCode || session.joinCode === normalized,
+  );
+}
+
 export async function registerSessionRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: CreateSessionRequest }>('/api/sessions', async (request, reply) => {
     const id = crypto.randomUUID();
@@ -20,14 +27,8 @@ export async function registerSessionRoutes(app: FastifyInstance): Promise<void>
 
   app.get<{ Params: { id: string } }>('/api/sessions/:id', async (request, reply) => {
     // Check local session store first
-    const session = sessions.get(request.params.id);
+    const session = findSession(request.params.id);
     if (session) return session;
-
-    // Fall back to looking up by joinCode across admin sessions
-    const adminSession = Array.from(adminSessions.values()).find(
-      s => s.id === request.params.id || s.joinCode === request.params.id.toUpperCase(),
-    );
-    if (adminSession) return adminSession;
 
     return reply.code(404).send({ code: 'SESSION_NOT_FOUND', message: 'Session was not found' });
   });

@@ -46,6 +46,7 @@ export interface AudioSessionControllerOptions {
   webSocketFactory?: WebSocketFactory;
   onStateChange?: (diagnostics: AudioSessionDiagnostics) => void;
   onError?: (error: Error) => void;
+  onTranscript?: (transcript: { direction: 'source' | 'translated'; text: string; final: boolean }) => void;
 }
 
 export class AudioSessionController {
@@ -57,6 +58,7 @@ export class AudioSessionController {
   private readonly isHandshakeComplete: (message: AudioTransportMessage) => boolean;
   private readonly onStateChange?: (diagnostics: AudioSessionDiagnostics) => void;
   private readonly onError?: (error: Error) => void;
+  private readonly onTranscript?: AudioSessionControllerOptions['onTranscript'];
   private state: AudioSessionState = 'IDLE';
   private connectionState: WebSocketAudioState = 'CLOSED';
   private handshakeComplete = false;
@@ -77,6 +79,7 @@ export class AudioSessionController {
       options.isHandshakeComplete ?? isProposedAudioHandshakeAck;
     this.onStateChange = options.onStateChange;
     this.onError = options.onError;
+    this.onTranscript = options.onTranscript;
     this.playback = new TranslatedAudioPlayback({
       ...options.playback,
       onStateChange: () => this.publishDiagnostics(),
@@ -249,6 +252,18 @@ export class AudioSessionController {
     }
     if (!this.handshakeComplete) {
       return;
+    }
+
+    if (typeof message === 'string') {
+      try {
+        const parsed = JSON.parse(message) as { type?: string; direction?: 'source' | 'translated'; text?: string; final?: boolean };
+        if (parsed.type === 'transcript' && parsed.direction && parsed.text) {
+          this.onTranscript?.({ direction: parsed.direction, text: parsed.text, final: parsed.final ?? true });
+          return;
+        }
+      } catch {
+        // Ignore non-JSON control frames after the handshake.
+      }
     }
 
     try {

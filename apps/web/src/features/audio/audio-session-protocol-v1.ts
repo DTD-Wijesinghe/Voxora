@@ -14,6 +14,7 @@ export interface ProposedAudioHandshake {
   sessionId: string;
   participantId: string;
   authentication: 'backend-required';
+  targetLanguage?: string;
 }
 
 export interface ProposedAudioHandshakeAck {
@@ -59,6 +60,17 @@ export function isProposedAudioHandshakeAck(
 export function decodeProposedTranslatedAudio(
   message: AudioTransportMessage,
 ): AudioChunk | null {
+  if (typeof message === 'string') {
+    try {
+      const parsed = JSON.parse(message) as { type?: string; sequence?: number; sampleRate?: number; pcm16?: string };
+      if (parsed.type !== 'audio' || typeof parsed.pcm16 !== 'string' || typeof parsed.sequence !== 'number') return null;
+      const bytes = Uint8Array.from(atob(parsed.pcm16), (character) => character.charCodeAt(0));
+      return { sequence: parsed.sequence, pcm16: bytes.buffer, sampleRate: parsed.sampleRate };
+    } catch {
+      return null;
+    }
+  }
+
   if (!(message instanceof ArrayBuffer)) {
     return null;
   }

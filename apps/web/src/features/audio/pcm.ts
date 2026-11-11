@@ -4,6 +4,7 @@ export const CHUNK_SAMPLE_COUNT = 1_600;
 export interface AudioChunk {
   sequence: number;
   pcm16: ArrayBuffer;
+  sampleRate?: number;
 }
 
 export type AudioChunkCallback = (chunk: AudioChunk) => void;

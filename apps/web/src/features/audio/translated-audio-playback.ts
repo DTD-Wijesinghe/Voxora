@@ -250,8 +250,9 @@ export class TranslatedAudioPlayback {
         break;
       }
 
+      const sampleRate = chunk.sampleRate ?? this.sampleRate;
       const samples = this.decodePcm16(chunk.pcm16);
-      const audioBuffer = context.createBuffer(1, samples.length, this.sampleRate);
+      const audioBuffer = context.createBuffer(1, samples.length, sampleRate);
       audioBuffer.getChannelData(0).set(samples);
       const source = context.createBufferSource();
       source.buffer = audioBuffer;
