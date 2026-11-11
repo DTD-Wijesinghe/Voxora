@@ -16,6 +16,8 @@ import {
 
 const SPEECH_RMS_THRESHOLD = 0.012;
 const SILENCE_TAIL_CHUNKS = 3;
+const MAX_TRANSPORT_RECONNECTS = 4;
+const TRANSPORT_RECONNECT_DELAY_MS = 750;
 
 export type AudioSessionState =
   | 'IDLE'
@@ -79,6 +81,8 @@ export class AudioSessionController {
   private speakerMuted = false;
   private stopping = false;
   private silenceTailChunks = 0;
+  private reconnectAttempts = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   public constructor(options: AudioSessionControllerOptions) {
     this.createHandshake = options.createHandshake;
@@ -129,6 +133,7 @@ export class AudioSessionController {
 
     const generation = ++this.generation;
     this.stopping = false;
+    this.clearReconnectTimer();
     this.lastError = null;
     this.handshakeComplete = false;
     this.silenceTailChunks = 0;
@@ -145,6 +150,8 @@ export class AudioSessionController {
   public stop(): void {
     this.generation += 1;
     this.stopping = true;
+    this.clearReconnectTimer();
+    this.reconnectAttempts = 0;
     this.pendingStart = null;
     this.handshakeComplete = false;
     this.capture.stop();
@@ -222,6 +229,7 @@ export class AudioSessionController {
         await this.capture.start();
       }
       this.assertCurrent(generation);
+      this.reconnectAttempts = 0;
       this.setState(this.captureEnabled ? (this.microphoneMuted ? 'MIC_MUTED' : 'CAPTURING') : 'LISTENING');
     } catch (error: unknown) {
       if (this.isCurrent(generation)) {
@@ -260,13 +268,41 @@ export class AudioSessionController {
       this.state !== 'STOPPED' &&
       this.state !== 'ERROR'
     ) {
+      const wasActive = this.handshakeComplete || this.state === 'CAPTURING' || this.state === 'MIC_MUTED' || this.state === 'LISTENING';
       this.generation += 1;
       this.handshakeComplete = false;
       this.capture.stop();
       this.transport.clearPendingChunks();
       this.playback.stop();
-      this.setState('ERROR');
-      this.reportError(new Error('Audio session WebSocket disconnected.'));
+      if (wasActive && this.reconnectAttempts < MAX_TRANSPORT_RECONNECTS) {
+        this.setState('CONNECTING');
+        this.scheduleReconnect();
+      } else {
+        this.setState('ERROR');
+        this.reportError(new Error('Audio session WebSocket disconnected.'));
+      }
+    }
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer !== null || this.stopping) return;
+    this.reconnectAttempts += 1;
+    const delay = TRANSPORT_RECONNECT_DELAY_MS * this.reconnectAttempts;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      void this.start().catch((error: unknown) => {
+        if (this.reconnectAttempts >= MAX_TRANSPORT_RECONNECTS) {
+          this.setState('ERROR');
+          this.reportError(error instanceof Error ? error : new Error('Unable to reconnect the audio session.'));
+        }
+      });
+    }, delay);
+  }
+
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
   }
 

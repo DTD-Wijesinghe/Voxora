@@ -27,6 +27,7 @@ export async function registerAudioRoutes(app: FastifyInstance): Promise<void> {
     let roomId: string | null = null;
     let peer: AudioPeer | null = null;
     let closed = false;
+    let messageQueue = Promise.resolve();
 
     const cleanup = async () => {
       if (closed) return;
@@ -39,7 +40,7 @@ export async function registerAudioRoutes(app: FastifyInstance): Promise<void> {
       await peer?.provider.close().catch(() => undefined);
     };
 
-    socket.on('message', async (raw: Buffer) => {
+    async function handleMessage(raw: Buffer): Promise<void> {
       try {
         if (!peer) {
           const hello = JSON.parse(raw.toString()) as Partial<AudioHello>;
@@ -71,10 +72,17 @@ export async function registerAudioRoutes(app: FastifyInstance): Promise<void> {
         const targets = recipients.length > 0 ? recipients : [peer];
         await Promise.all(targets.map((target) => target.provider.sendAudio(frame.pcm16)));
       } catch (error) {
+        app.log.warn({ err: error }, 'Audio WebSocket session closed after a protocol/provider error.');
         sendJson(socket, { type: 'error', code: 'AUDIO_SESSION_ERROR', message: error instanceof Error ? error.message : 'Audio session failed.' });
         await cleanup();
         socket.close();
       }
+    }
+
+    // Handshake/provider setup is asynchronous. Serialize frames so an early
+    // audio chunk can never race the handshake and be parsed as JSON.
+    socket.on('message', (raw: Buffer) => {
+      messageQueue = messageQueue.then(() => handleMessage(raw)).catch(() => undefined);
     });
     socket.on('close', () => { void cleanup(); });
     socket.on('error', () => { void cleanup(); });
