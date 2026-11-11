@@ -201,6 +201,27 @@ describe('reconnecting', () => {
     expect(sent).toEqual(['AQ==', 'Ag==']);
   });
 
+  it('does not replay buffered audio when the session resumes', async () => {
+    const gemini = fakeGemini();
+    const { session } = await startSession(gemini);
+    gemini.message({ sessionResumptionUpdate: { resumable: true, newHandle: 'handle-1' } });
+    let openSecond: () => void = () => {};
+    gemini.connect.mockImplementationOnce(async (params) => {
+      await new Promise<void>((resolve) => (openSecond = resolve));
+      const second = { sendRealtimeInput: vi.fn(), close: vi.fn() };
+      gemini.connections.push({ params, session: second });
+      return second;
+    });
+
+    gemini.callbacks.onclose?.({ code: 1006, reason: '' } as CloseEvent);
+    await session.sendAudio(new Uint8Array([1]).buffer);
+    await flush();
+    openSecond();
+    await flush();
+
+    expect(gemini.session.sendRealtimeInput).not.toHaveBeenCalled();
+  });
+
   it('switches connections when Gemini announces it is going away', async () => {
     const { gemini, events } = await startSession();
     const first = gemini.session;

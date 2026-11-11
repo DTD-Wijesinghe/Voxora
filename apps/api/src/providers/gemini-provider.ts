@@ -201,6 +201,10 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
           if (attempt > 0 || cause) await sleep(reconnectDelayMs * 2 ** attempt);
           if (stopped) return;
           try {
+            // A resumable Gemini session already retains the audio context.
+            // Re-sending buffered chunks here makes the same spoken phrase
+            // translate twice after a normal go-away/reconnect cycle.
+            const resumeExistingSession = Boolean(resumeHandle);
             const session = await open();
             if (stopped) {
               session.close();
@@ -209,7 +213,9 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
             // Gemini's setupComplete message on the new connection reports `live`.
             current = session;
             reconnecting = false;
-            for (const chunk of pendingAudio.splice(0)) send(chunk);
+            const chunksToReplay = resumeExistingSession ? [] : pendingAudio.splice(0);
+            if (resumeExistingSession) pendingAudio.length = 0;
+            for (const chunk of chunksToReplay) send(chunk);
             return;
           } catch (error) {
             lastCode = toProviderError(error).code;
