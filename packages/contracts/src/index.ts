@@ -1,4 +1,5 @@
 export type LanguageCode = string;
+export type SessionMode = 'sinhala' | 'mix';
 
 export interface AdminSession {
   id: string;
@@ -10,18 +11,24 @@ export interface AdminSession {
   createdAt: string;
   expiresAt: string;
   qrUrl: string;
+  mode: SessionMode;
+  sourceLanguage: LanguageCode;
 }
 
 export interface CreateAdminSessionRequest {
   title: string;
   participantLimit: number;
   expiresInMinutes?: number;
+  mode?: SessionMode;
+  sourceLanguage?: LanguageCode;
 }
 
 export interface UpdateAdminSessionRequest {
   title?: string;
   participantLimit?: number;
   status?: SessionStatus;
+  mode?: SessionMode;
+  sourceLanguage?: LanguageCode;
 }
 
 export type SessionStatus = 'connecting' | 'live' | 'reconnecting' | 'ended';
@@ -39,6 +46,8 @@ export interface Session {
   status: SessionStatus;
   participants: Participant[];
   expiresAt: string;
+  mode?: SessionMode;
+  sourceLanguage?: LanguageCode;
 }
 
 export interface CreateSessionRequest {

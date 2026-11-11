@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest } from '@voxora/contracts';
+import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest, SessionMode } from '@voxora/contracts';
 import { BrandMark } from '../components/BrandMark';
 
 const API = import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
@@ -10,13 +10,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return r.json();
 }
 
-interface AdminDashboardProps { onBack: () => void; authToken: string; onLogout: () => void; }
+interface AdminDashboardProps { onBack: () => void; authToken: string; onLogout: () => void; onOpenSession: (session: AdminSession) => void; }
 
-export function AdminDashboard({ onBack, authToken, onLogout }: AdminDashboardProps) {
+export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: AdminDashboardProps) {
   const [sessions, setSessions] = useState<AdminSession[]>([]);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<CreateAdminSessionRequest>({ title: '', participantLimit: 10, expiresInMinutes: 60 });
+  const [form, setForm] = useState<CreateAdminSessionRequest>({ title: '', participantLimit: 10, expiresInMinutes: 60, mode: 'mix', sourceLanguage: 'si' });
   const [editForm, setEditForm] = useState<UpdateAdminSessionRequest>({});
   const [error, setError] = useState('');
 
@@ -31,7 +31,7 @@ export function AdminDashboard({ onBack, authToken, onLogout }: AdminDashboardPr
     setError('');
     try {
       await apiFetch('/api/admin/sessions', { method: 'POST', headers: { Authorization: `Bearer ${authToken}` }, body: JSON.stringify(form) });
-      setForm({ title: '', participantLimit: 10, expiresInMinutes: 60 });
+      setForm({ title: '', participantLimit: 10, expiresInMinutes: 60, mode: 'mix', sourceLanguage: 'si' });
       setCreating(false);
       load();
     } catch (err: any) { setError(err.message); }
@@ -88,6 +88,12 @@ export function AdminDashboard({ onBack, authToken, onLogout }: AdminDashboardPr
             <label className="field"><span className="field__label">Expires In (minutes)</span>
               <input className="field__control" type="number" min={5} max={1440} value={form.expiresInMinutes} onChange={e => setForm(f => ({ ...f, expiresInMinutes: Number(e.target.value) }))} />
             </label>
+            <label className="field"><span className="field__label">Voice input mode</span>
+              <select className="field__control" value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value as SessionMode }))}><option value="mix">Mix mode — automatic language detection</option><option value="sinhala">Sinhala mode — Sinhala input only</option></select>
+            </label>
+            <label className="field"><span className="field__label">Organizer source language</span>
+              <select className="field__control" value={form.sourceLanguage} onChange={e => setForm(f => ({ ...f, sourceLanguage: e.target.value }))}><option value="si">Sinhala</option><option value="en">English</option></select>
+            </label>
             <div className="admin-form-actions">
               <button className="button button--primary" type="submit">Create</button>
               <button className="button button--ghost" type="button" onClick={() => setCreating(false)}>Cancel</button>
@@ -117,10 +123,13 @@ export function AdminDashboard({ onBack, authToken, onLogout }: AdminDashboardPr
                     <h3>{s.title}</h3>
                     <p className="admin-session-meta"><strong>Code:</strong> <code>{s.joinCode}</code></p>
                     <p className="admin-session-meta"><strong>Status:</strong> <span className={`status-badge status-badge--${s.status}`}>{s.status}</span></p>
-                    <p className="admin-session-meta"><strong>Participants:</strong> {s.participants.length} / {s.participantLimit}</p>
+                    <p className="admin-session-meta"><strong>Mode:</strong> {s.mode === 'sinhala' ? 'Sinhala only' : 'Mix / auto-detect'}</p>
+                    <p className="admin-session-meta"><strong>Attendees:</strong> {s.participants.filter((participant) => !participant.isHost).length} / {s.participantLimit}</p>
+                    <div className="admin-participants" aria-label={`Participants in ${s.title}`}><strong>Joined now</strong>{s.participants.map((participant) => <span key={participant.id} className="admin-participant">{participant.displayName}{participant.isHost ? ' · organizer' : ` · ${participant.targetLanguage}`}</span>)}</div>
                     <p className="admin-session-meta"><strong>Expires:</strong> {new Date(s.expiresAt).toLocaleString()}</p>
                     <p className="admin-session-meta admin-session-url"><strong>Join URL:</strong> <a href={s.qrUrl} target="_blank" rel="noreferrer">{s.qrUrl}</a></p>
                     <div className="admin-form-actions">
+                      <button className="button button--primary button--small" type="button" onClick={() => onOpenSession(s)}>Open live room</button>
                       <button className="button button--ghost button--small" type="button" onClick={() => { setEditId(s.id); setEditForm({ title: s.title, participantLimit: s.participantLimit }); }}>Edit</button>
                       <button className="button button--danger button--small" type="button" onClick={() => handleDelete(s.id)}>Delete</button>
                     </div>

@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { networkInterfaces } from 'os';
 import { adminSessions } from './store.js';
 import { requireAdmin } from '../auth/routes.js';
-import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest, SessionStatus } from './store.js';
+import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest, SessionStatus, SessionMode } from './store.js';
 
 /** Returns the active Wi-Fi or LAN IPv4 address, prioritizing real Wi-Fi/Ethernet subnets over virtual adapters (e.g. VirtualBox 192.168.56.x). */
 function getLocalIp(): string {
@@ -51,7 +51,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/admin/sessions – create
   app.post<{ Body: CreateAdminSessionRequest }>('/api/admin/sessions', async (request, reply) => {
     if (!requireAdmin(request, reply)) return;
-    const { title, participantLimit, expiresInMinutes = 60 } = request.body;
+    const { title, participantLimit, expiresInMinutes = 60, mode = 'mix', sourceLanguage = 'si' } = request.body;
     const id = crypto.randomUUID();
     const joinCode = id.slice(0, 6).toUpperCase();
     const qrUrl = `${webOrigin}/join?code=${joinCode}`;
@@ -62,10 +62,12 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       joinCode,
       status: 'connecting',
       participantLimit,
-      participants: [],
+      participants: [{ id: `organizer-${id}`, displayName: 'Organizer', targetLanguage: sourceLanguage, isHost: true }],
       createdAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + expiresInMinutes * 60 * 1000).toISOString(),
       qrUrl,
+      mode,
+      sourceLanguage,
     };
     adminSessions.set(id, session);
     return reply.code(201).send(session);
@@ -76,14 +78,18 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     if (!requireAdmin(request, reply)) return;
     const session = adminSessions.get(request.params.id);
     if (!session) return reply.code(404).send({ code: 'SESSION_NOT_FOUND', message: 'Session not found' });
-    const { title, participantLimit, status } = request.body as {
+    const { title, participantLimit, status, mode, sourceLanguage } = request.body as {
       title?: string;
       participantLimit?: number;
       status?: SessionStatus;
+      mode?: SessionMode;
+      sourceLanguage?: string;
     };
     if (title !== undefined) session.title = title;
     if (participantLimit !== undefined) session.participantLimit = participantLimit;
     if (status !== undefined) session.status = status;
+    if (mode !== undefined) session.mode = mode;
+    if (sourceLanguage !== undefined) session.sourceLanguage = sourceLanguage;
     adminSessions.set(session.id, session);
     return reply.send(session);
   });
@@ -109,7 +115,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const session = Array.from(adminSessions.values()).find(s => s.joinCode === joinCode.toUpperCase());
       if (!session) return reply.code(404).send({ code: 'SESSION_NOT_FOUND', message: 'Session not found' });
 
-      if (session.participants.length >= session.participantLimit) {
+      if (session.participants.filter((participant) => !participant.isHost).length >= session.participantLimit) {
         return reply.code(409).send({ code: 'SESSION_FULL', message: 'Session has reached its participant limit' });
       }
 
@@ -117,7 +123,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         id: crypto.randomUUID(),
         displayName,
         targetLanguage,
-        isHost: session.participants.length === 0,
+        isHost: false,
       };
       session.participants.push(participant);
       if (session.status === 'connecting') session.status = 'live';

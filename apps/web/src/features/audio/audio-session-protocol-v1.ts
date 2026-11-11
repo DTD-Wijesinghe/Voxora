@@ -15,6 +15,7 @@ export interface ProposedAudioHandshake {
   participantId: string;
   authentication: 'backend-required';
   targetLanguage?: string;
+  sessionMode?: 'sinhala' | 'mix';
 }
 
 export interface ProposedAudioHandshakeAck {

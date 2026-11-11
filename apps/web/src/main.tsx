@@ -37,7 +37,7 @@ function App() {
   }
 
   if (page === 'admin' && auth?.user.role === 'admin') {
-    return <AdminDashboard authToken={auth.token} onBack={() => setPage('home')} onLogout={signOut} />;
+    return <AdminDashboard authToken={auth.token} onBack={() => setPage('home')} onLogout={signOut} onOpenSession={(adminSession) => { setSession(adminSession); setPage('conversation'); }} />;
   }
 
   if (page === 'user' && auth?.user.role === 'user') {
