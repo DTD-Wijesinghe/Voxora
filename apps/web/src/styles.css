@@ -11,6 +11,8 @@ h1, h2, .brand-mark, .hero h1 { font-family: 'Space Grotesk', system-ui, sans-se
 .marketing-shell, .form-shell { min-height: 100vh; background: radial-gradient(circle at 80% 12%, rgba(242, 194, 179, .23), transparent 24rem), #f7f9fc; }
 .topbar, .conversation-topbar { min-height: 78px; padding: 0 6vw; display: flex; align-items: center; gap: 22px; }
 .topbar { border-bottom: 1px solid rgba(23, 32, 51, .06); }
+.topbar .topbar__tag, .topbar .button { font-size: 14px; }
+.topbar .button { min-height: 42px; }
 .brand-mark { display: inline-flex; align-items: center; gap: 8px; color: #102a43; font-size: 22px; font-weight: 700; letter-spacing: -.045em; }
 .brand-mark__image-frame { width: 34px; height: 34px; display: block; position: relative; overflow: hidden; border-radius: 10px; background: #102a43; box-shadow: 0 5px 8px rgba(15, 118, 110, .18); }
 .brand-mark__image { width: 84px; height: 84px; max-width: none; display: block; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
