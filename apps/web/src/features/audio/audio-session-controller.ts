@@ -14,6 +14,9 @@ import {
   isProposedAudioHandshakeAck,
 } from './audio-session-protocol-v1';
 
+const SPEECH_RMS_THRESHOLD = 0.012;
+const SILENCE_TAIL_CHUNKS = 3;
+
 export type AudioSessionState =
   | 'IDLE'
   | 'CONNECTING'
@@ -75,6 +78,7 @@ export class AudioSessionController {
   private microphoneMuted = false;
   private speakerMuted = false;
   private stopping = false;
+  private silenceTailChunks = 0;
 
   public constructor(options: AudioSessionControllerOptions) {
     this.createHandshake = options.createHandshake;
@@ -127,6 +131,7 @@ export class AudioSessionController {
     this.stopping = false;
     this.lastError = null;
     this.handshakeComplete = false;
+    this.silenceTailChunks = 0;
     this.setState('CONNECTING');
     const pending = this.startSession(generation);
     this.pendingStart = pending;
@@ -143,6 +148,7 @@ export class AudioSessionController {
     this.pendingStart = null;
     this.handshakeComplete = false;
     this.capture.stop();
+    this.silenceTailChunks = 0;
     this.transport.clearPendingChunks();
     this.transport.disconnect();
     this.playback.stop();
@@ -154,6 +160,7 @@ export class AudioSessionController {
       return;
     }
     this.capture.mute();
+    this.silenceTailChunks = 0;
     this.microphoneMuted = true;
     this.setState('MIC_MUTED');
   }
@@ -305,10 +312,30 @@ export class AudioSessionController {
     ) {
       return;
     }
+    if (!this.containsSpeech(chunk.pcm16)) {
+      if (this.silenceTailChunks === 0) return;
+      this.silenceTailChunks -= 1;
+    } else {
+      // Keep a short tail so Gemini can detect the end of the utterance, then
+      // stop forwarding silence instead of repeatedly extending old speech.
+      this.silenceTailChunks = SILENCE_TAIL_CHUNKS;
+    }
     if (this.transport.sendChunk(chunk)) {
       this.sentChunks += 1;
       this.publishDiagnostics();
     }
+  }
+
+  private containsSpeech(pcm16: ArrayBuffer): boolean {
+    if (pcm16.byteLength < 2 || pcm16.byteLength % 2 !== 0) return false;
+    const view = new DataView(pcm16);
+    let energy = 0;
+    const sampleCount = pcm16.byteLength / 2;
+    for (let index = 0; index < sampleCount; index += 1) {
+      const sample = view.getInt16(index * 2, true) / 32768;
+      energy += sample * sample;
+    }
+    return Math.sqrt(energy / sampleCount) >= SPEECH_RMS_THRESHOLD;
   }
 
   private cleanupAfterFailure(): void {
