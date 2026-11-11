@@ -143,3 +143,7 @@ body { background: #0b1724; }
 [data-theme='light'] .caption__meta span, [data-theme='light'] .conversation-main__footer { color: #8b98a8; }
 [data-theme='light'] .theme-toggle { color: #345; border-color: #d8e0ea; background: #fff; box-shadow: 0 10px 28px rgba(24,48,76,.12); }
 .field__help { display: block; margin-top: -2px; color: #8b98a8; font-size: 11px; line-height: 1.45; }
+.mode-help { margin: -4px 0 18px; color: #9eafbe; font-size: 11px; line-height: 1.45; }
+.mode-help strong { color: #f5ad2f; }
+[data-theme='light'] .mode-help { color: #687789; }
+[data-theme='light'] .mode-help strong { color: #0f766e; }

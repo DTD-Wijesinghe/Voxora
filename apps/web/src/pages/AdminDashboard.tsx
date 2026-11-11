@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest, SessionMode } from '@voxora/contracts';
 import { BrandMark } from '../components/BrandMark';
+import { supportedLanguages } from '../lib/languages';
 
 const API = import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 
@@ -37,7 +38,7 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
     e.preventDefault();
     setError('');
     try {
-      await apiFetch('/api/admin/sessions', { method: 'POST', headers: { Authorization: `Bearer ${authToken}` }, body: JSON.stringify(form) });
+      await apiFetch('/api/admin/sessions', { method: 'POST', headers: { Authorization: `Bearer ${authToken}` }, body: JSON.stringify({ ...form, sourceLanguage: form.mode === 'sinhala' ? 'si' : form.sourceLanguage }) });
       setForm({ title: '', participantLimit: 10, expiresInMinutes: 60, mode: 'mix', sourceLanguage: 'si' });
       setCreating(false);
       load();
@@ -99,12 +100,12 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
               <input className="field__control" type="number" min={5} max={1440} value={form.expiresInMinutes} onChange={e => setForm(f => ({ ...f, expiresInMinutes: Number(e.target.value) }))} />
             </label>
             <label className="field"><span className="field__label">Voice input mode</span>
-              <select className="field__control" value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value as SessionMode }))}><option value="mix">Mix mode — detect the organizer’s spoken language</option><option value="sinhala">Sinhala mode — accept Sinhala speech only</option></select>
+              <select className="field__control" value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value as SessionMode, sourceLanguage: e.target.value === 'sinhala' ? 'si' : f.sourceLanguage }))}><option value="mix">Mix mode — automatic language detection</option><option value="sinhala">Sinhala mode — Sinhala input only</option></select>
             </label>
-            <label className="field"><span className="field__label">Organizer input language</span>
-              <select className="field__control" value={form.sourceLanguage} disabled={form.mode === 'mix'} onChange={e => setForm(f => ({ ...f, sourceLanguage: e.target.value }))}><option value="si">Sinhala</option><option value="en">English</option></select>
-              <span className="field__help">Sinhala mode uses this as the required organizer input language. Mix mode detects the spoken language automatically.</span>
-            </label>
+            {form.mode === 'mix' ? <label className="field"><span className="field__label">Primary organizer language</span>
+              <select className="field__control" value={form.sourceLanguage} onChange={e => setForm(f => ({ ...f, sourceLanguage: e.target.value }))}>{supportedLanguages.map(language => <option key={language.code} value={language.code}>{language.flag} - {language.label}</option>)}</select>
+              <span className="field__help">Select the language used most often. Other languages are also accepted and detected automatically.</span>
+            </label> : <p className="mode-help"><strong>Sinhala-only input:</strong> the organizer should speak Sinhala in this session.</p>}
             <div className="admin-form-actions">
               <button className="button button--primary" type="submit">Create</button>
               <button className="button button--ghost" type="button" onClick={() => setCreating(false)}>Cancel</button>
