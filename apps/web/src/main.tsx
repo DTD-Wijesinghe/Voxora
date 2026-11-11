@@ -4,8 +4,8 @@ import type { Session } from '@voxora/contracts';
 import { HomePage } from './pages/HomePage';
 import { JoinSessionPage } from './pages/JoinSessionPage';
 import { ConversationPage } from './features/conversation/ConversationPage';
-import { MicrophoneDevPanel } from './features/audio/microphone-dev-panel';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { MicrophoneDevPanel } from './features/audio/microphone-dev-panel';
 import type { AppPage } from './types';
 import './styles.css';
 
