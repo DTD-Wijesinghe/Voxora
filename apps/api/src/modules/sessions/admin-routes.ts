@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { networkInterfaces } from 'os';
 import { adminSessions } from './store.js';
+import { requireAdmin } from '../auth/routes.js';
 import type { AdminSession, CreateAdminSessionRequest, UpdateAdminSessionRequest, SessionStatus } from './store.js';
 
 /** Returns the active Wi-Fi or LAN IPv4 address, prioritizing real Wi-Fi/Ethernet subnets over virtual adapters (e.g. VirtualBox 192.168.56.x). */
@@ -35,11 +36,13 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   // GET /api/admin/sessions – list all
   app.get('/api/admin/sessions', async (_request, reply) => {
+    if (!requireAdmin(_request, reply)) return;
     return reply.send(Array.from(adminSessions.values()));
   });
 
   // GET /api/admin/sessions/:id – get single
   app.get<{ Params: { id: string } }>('/api/admin/sessions/:id', async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
     const session = adminSessions.get(request.params.id);
     if (!session) return reply.code(404).send({ code: 'SESSION_NOT_FOUND', message: 'Session not found' });
     return reply.send(session);
@@ -47,6 +50,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   // POST /api/admin/sessions – create
   app.post<{ Body: CreateAdminSessionRequest }>('/api/admin/sessions', async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
     const { title, participantLimit, expiresInMinutes = 60 } = request.body;
     const id = crypto.randomUUID();
     const joinCode = id.slice(0, 6).toUpperCase();
@@ -69,6 +73,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   // PATCH /api/admin/sessions/:id – update
   app.patch<{ Params: { id: string }; Body: UpdateAdminSessionRequest }>('/api/admin/sessions/:id', async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
     const session = adminSessions.get(request.params.id);
     if (!session) return reply.code(404).send({ code: 'SESSION_NOT_FOUND', message: 'Session not found' });
     const { title, participantLimit, status } = request.body as {
@@ -85,6 +90,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   // DELETE /api/admin/sessions/:id – delete
   app.delete<{ Params: { id: string } }>('/api/admin/sessions/:id', async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
     if (!adminSessions.has(request.params.id)) {
       return reply.code(404).send({ code: 'SESSION_NOT_FOUND', message: 'Session not found' });
     }

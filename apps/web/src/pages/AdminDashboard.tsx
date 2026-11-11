@@ -10,9 +10,9 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return r.json();
 }
 
-interface AdminDashboardProps { onBack: () => void; }
+interface AdminDashboardProps { onBack: () => void; authToken: string; onLogout: () => void; }
 
-export function AdminDashboard({ onBack }: AdminDashboardProps) {
+export function AdminDashboard({ onBack, authToken, onLogout }: AdminDashboardProps) {
   const [sessions, setSessions] = useState<AdminSession[]>([]);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [error, setError] = useState('');
 
   async function load() {
-    try { setSessions(await apiFetch<AdminSession[]>('/api/admin/sessions')); } catch {}
+    try { setSessions(await apiFetch<AdminSession[]>('/api/admin/sessions', { headers: { Authorization: `Bearer ${authToken}` } })); } catch { setError('Your admin session has expired. Please sign in again.'); }
   }
 
   useEffect(() => { load(); }, []);
@@ -30,7 +30,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     e.preventDefault();
     setError('');
     try {
-      await apiFetch('/api/admin/sessions', { method: 'POST', body: JSON.stringify(form) });
+      await apiFetch('/api/admin/sessions', { method: 'POST', headers: { Authorization: `Bearer ${authToken}` }, body: JSON.stringify(form) });
       setForm({ title: '', participantLimit: 10, expiresInMinutes: 60 });
       setCreating(false);
       load();
@@ -39,7 +39,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
   async function handleUpdate(id: string) {
     try {
-      await apiFetch(`/api/admin/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(editForm) });
+      await apiFetch(`/api/admin/sessions/${id}`, { method: 'PATCH', headers: { Authorization: `Bearer ${authToken}` }, body: JSON.stringify(editForm) });
       setEditId(null);
       load();
     } catch (err: any) { setError(err.message); }
@@ -47,7 +47,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this session?')) return;
-    await apiFetch(`/api/admin/sessions/${id}`, { method: 'DELETE' });
+    await apiFetch(`/api/admin/sessions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${authToken}` } });
     load();
   }
 
@@ -57,7 +57,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         <button className="back-button" type="button" onClick={onBack} aria-label="Back">←</button>
         <BrandMark />
         <span className="topbar__tag">Admin Dashboard</span>
-        <button className="button button--primary button--small" type="button" onClick={() => setCreating(true)}>+ New Session</button>
+        <div className="topbar__action admin-header-actions"><button className="button button--primary button--small" type="button" onClick={() => setCreating(true)}>+ New Session</button><button className="button button--ghost button--small" type="button" onClick={onLogout}>Sign out</button></div>
       </header>
 
       <main className="admin-main">
