@@ -5,7 +5,7 @@ export interface AuthSession { token: string; user: { role: 'admin' | 'user'; em
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? `http://${window.location.hostname}:3000`;
 
-export async function login(input: { role: 'admin' | 'user'; email: string; password: string; displayName?: string }): Promise<AuthSession> {
+export async function login(input: { email: string; password: string; displayName?: string }): Promise<AuthSession> {
   return request<AuthSession>('/api/auth/login', { method: 'POST', body: JSON.stringify(input) });
 }
 
