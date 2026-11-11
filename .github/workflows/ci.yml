@@ -22,10 +22,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          # TODO: restore "cache: pnpm" once pnpm-lock.yaml is on develop
+          cache: pnpm
       - name: Install dependencies
-        # TODO: switch to --frozen-lockfile once pnpm-lock.yaml is on develop
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Typecheck
         run: pnpm typecheck
       - name: Build

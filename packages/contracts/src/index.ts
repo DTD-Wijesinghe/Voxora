@@ -1,5 +1,29 @@
 export type LanguageCode = string;
 
+export interface AdminSession {
+  id: string;
+  title: string;
+  joinCode: string;
+  status: SessionStatus;
+  participantLimit: number;
+  participants: Participant[];
+  createdAt: string;
+  expiresAt: string;
+  qrUrl: string;
+}
+
+export interface CreateAdminSessionRequest {
+  title: string;
+  participantLimit: number;
+  expiresInMinutes?: number;
+}
+
+export interface UpdateAdminSessionRequest {
+  title?: string;
+  participantLimit?: number;
+  status?: SessionStatus;
+}
+
 export type SessionStatus = 'connecting' | 'live' | 'reconnecting' | 'ended';
 
 export interface Participant {

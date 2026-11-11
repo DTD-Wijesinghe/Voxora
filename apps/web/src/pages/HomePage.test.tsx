@@ -5,7 +5,7 @@ import { HomePage } from './HomePage';
 describe('HomePage', () => {
   it('renders the main heading and starts a session', () => {
     const onJoin = vi.fn();
-    render(<HomePage onJoin={onJoin} />);
+    render(<HomePage onJoin={onJoin} onAdmin={vi.fn()} />);
     expect(screen.getByRole('heading', { name: /conversations that/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /start a conversation/i }));
     expect(onJoin).toHaveBeenCalledOnce();
