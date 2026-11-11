@@ -18,10 +18,12 @@ Revision: `main` at `7d201fa`
 
 - Provider configuration, mock provider, Gemini adapter, error mapping, reconnect behavior, and sample-rate handling.
 - Home page rendering and join page rendering/validation.
+- Playwright end-to-end coverage for the home page and join-page validation flow.
 
 ## Missing release tests
 
 - Two-browser, two-way live conversation.
+- Admin dashboard and QR attendee join flow.
 - Backend WebSocket audio handshake and translation event forwarding.
 - Reconnect after network loss.
 - Session expiry, duplicate joins, participant limit, leave, and end operations.
