@@ -13,7 +13,7 @@ describe('JoinSessionPage', () => {
     const onJoined = vi.fn();
     render(<JoinSessionPage onBack={vi.fn()} onJoined={onJoined} />);
     fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: 'Amaya' } });
-    fireEvent.change(screen.getByLabelText(/preferred language/i), { target: { value: 'si' } });
+    fireEvent.change(screen.getByLabelText(/listening language/i), { target: { value: 'si' } });
     fireEvent.change(screen.getByLabelText(/session code/i), { target: { value: '6E175D' } });
     fireEvent.click(screen.getByRole('button', { name: /join session/i }));
     await waitFor(() => expect(onJoined).toHaveBeenCalledOnce());

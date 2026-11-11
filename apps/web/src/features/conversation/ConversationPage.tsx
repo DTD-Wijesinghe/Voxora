@@ -11,14 +11,14 @@ import { AudioSessionController, type AudioSessionDiagnostics } from '../audio/a
 import { createProposedAudioHandshake, encodeProposedInputAudio } from '../audio/audio-session-protocol-v1';
 import type { Caption, UiSessionStatus } from '../../types';
 
-interface ConversationPageProps { session: Session; onLeave: () => void; }
+interface ConversationPageProps { session: Session; role: 'organizer' | 'attendee'; onLeave: () => void; }
 const INITIAL_DIAGNOSTICS: AudioSessionDiagnostics['playback'] = { state: 'IDLE', queuedChunks: 0, droppedChunks: 0, playedChunks: 0, expectedSequence: null };
 
-export function ConversationPage({ session, onLeave }: ConversationPageProps) {
+export function ConversationPage({ session, role, onLeave }: ConversationPageProps) {
   const controller = useRef<AudioSessionController | null>(null);
   const [diagnostics, setDiagnostics] = useState<AudioSessionDiagnostics>({ state: 'IDLE', connectionState: 'CLOSED', handshakeComplete: false, sentChunks: 0, receivedChunks: 0, droppedChunks: 0, playback: INITIAL_DIAGNOSTICS, error: null });
   const hostParticipantId = `organizer-${session.id}`;
-  const isHost = session.participants.some((participant) => participant.id === hostParticipantId && participant.isHost);
+  const isHost = role === 'organizer';
   const currentParticipant = isHost ? session.participants.find((participant) => participant.id === hostParticipantId) : session.participants.at(-1);
   const participantId = currentParticipant?.id ?? session.participants[0]?.id ?? session.id;
   const [language, setLanguage] = useState(currentParticipant?.targetLanguage ?? 'en');

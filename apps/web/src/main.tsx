@@ -23,12 +23,14 @@ const initialPage: AppPage = window.location.pathname === '/admin'
 function App() {
   const [page, setPage] = useState<AppPage>(initialPage);
   const [session, setSession] = useState<Session | null>(null);
+  const [conversationRole, setConversationRole] = useState<'organizer' | 'attendee' | null>(null);
   const [auth, setAuth] = useState<AuthSession | null>(null);
 
   function signOut() {
     if (auth) void logout(auth.token).catch(() => undefined);
     setAuth(null);
     setSession(null);
+    setConversationRole(null);
     setPage('home');
   }
 
@@ -37,7 +39,7 @@ function App() {
   }
 
   if (page === 'admin' && auth?.user.role === 'admin') {
-    return <AdminDashboard authToken={auth.token} onBack={() => setPage('home')} onLogout={signOut} onOpenSession={(adminSession) => { setSession(adminSession); setPage('conversation'); }} />;
+    return <AdminDashboard authToken={auth.token} onBack={() => setPage('home')} onLogout={signOut} onOpenSession={(adminSession) => { setSession(adminSession); setConversationRole('organizer'); setPage('conversation'); }} />;
   }
 
   if (page === 'user' && auth?.user.role === 'user') {
@@ -45,11 +47,11 @@ function App() {
   }
 
   if (page === 'join') {
-    return <JoinSessionPage prefillCode={initialCode} onBack={() => setPage('home')} onJoined={(nextSession) => { setSession(nextSession); setPage('conversation'); }} />;
+    return <JoinSessionPage prefillCode={initialCode} onBack={() => setPage('home')} onJoined={(nextSession) => { setSession(nextSession); setConversationRole('attendee'); setPage('conversation'); }} />;
   }
 
   if (page === 'conversation' && session) {
-    return <ConversationPage session={session} onLeave={() => { setSession(null); setPage('home'); }} />;
+    return <ConversationPage session={session} role={conversationRole ?? 'attendee'} onLeave={() => { setSession(null); setConversationRole(null); setPage('home'); }} />;
   }
 
   return (
