@@ -12,11 +12,9 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 interface AdminDashboardProps { onBack: () => void; authToken: string; onLogout: () => void; onOpenSession: (session: AdminSession) => void; }
-interface AuditEntry { id: string; timestamp: string; action: string; sessionId?: string; metadata?: Record<string, string | number | boolean>; }
 
 export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: AdminDashboardProps) {
   const [sessions, setSessions] = useState<AdminSession[]>([]);
-  const [history, setHistory] = useState<AuditEntry[]>([]);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<CreateAdminSessionRequest>({ title: '', participantLimit: 10, expiresInMinutes: 60, mode: 'mix', sourceLanguage: 'si' });
@@ -26,12 +24,8 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
   async function load() {
     try {
       const headers = { Authorization: `Bearer ${authToken}` };
-      const [nextSessions, nextHistory] = await Promise.all([
-        apiFetch<AdminSession[]>('/api/admin/sessions', { headers }),
-        apiFetch<AuditEntry[]>('/api/admin/history', { headers }),
-      ]);
+      const nextSessions = await apiFetch<AdminSession[]>('/api/admin/sessions', { headers });
       setSessions(nextSessions);
-      setHistory(nextHistory);
     } catch { setError('Your admin session has expired. Please sign in again.'); }
   }
 
@@ -87,10 +81,6 @@ export function AdminDashboard({ onBack, authToken, onLogout, onOpenSession }: A
           <article><span>Active rooms</span><strong>{sessions.filter((session) => session.status === 'live' || session.status === 'connecting').length}</strong><small>Ready for participants</small></article>
           <article><span>Total rooms</span><strong>{sessions.length}</strong><small>Managed from this account</small></article>
           <article><span>Participants</span><strong>{sessions.reduce((total, session) => total + session.participants.length, 0)}</strong><small>Across all rooms</small></article>
-        </section>
-        <section className="admin-history" aria-labelledby="admin-history-title">
-          <div className="section-heading"><h2 id="admin-history-title">Recent activity</h2><span className="admin-history-security">Protected audit log</span></div>
-          {history.length === 0 ? <p className="admin-empty admin-empty--compact">No activity recorded yet.</p> : <div className="admin-history-list">{history.slice(0, 8).map((entry) => <div className="admin-history-row" key={entry.id}><strong>{entry.action.replaceAll('.', ' ')}</strong><time dateTime={entry.timestamp}>{new Date(entry.timestamp).toLocaleString()}</time></div>)}</div>}
         </section>
         {error && <p className="form-error" role="alert">{error}</p>}
 
