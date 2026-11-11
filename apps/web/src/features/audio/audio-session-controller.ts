@@ -43,6 +43,7 @@ export interface AudioSessionControllerOptions {
   isHandshakeComplete?: (message: AudioTransportMessage) => boolean;
   microphone?: MicrophoneManager;
   playback: Omit<ConstructorParameters<typeof TranslatedAudioPlayback>[0], 'onStateChange' | 'onError'>;
+  playbackEnabled?: boolean;
   webSocketFactory?: WebSocketFactory;
   onStateChange?: (diagnostics: AudioSessionDiagnostics) => void;
   onError?: (error: Error) => void;
@@ -59,6 +60,7 @@ export class AudioSessionController {
   private readonly onStateChange?: (diagnostics: AudioSessionDiagnostics) => void;
   private readonly onError?: (error: Error) => void;
   private readonly onTranscript?: AudioSessionControllerOptions['onTranscript'];
+  private readonly playbackEnabled: boolean;
   private state: AudioSessionState = 'IDLE';
   private connectionState: WebSocketAudioState = 'CLOSED';
   private handshakeComplete = false;
@@ -80,6 +82,7 @@ export class AudioSessionController {
     this.onStateChange = options.onStateChange;
     this.onError = options.onError;
     this.onTranscript = options.onTranscript;
+    this.playbackEnabled = options.playbackEnabled ?? true;
     this.playback = new TranslatedAudioPlayback({
       ...options.playback,
       onStateChange: () => this.publishDiagnostics(),
@@ -188,7 +191,9 @@ export class AudioSessionController {
 
   private async startSession(generation: number): Promise<void> {
     try {
-      await this.playback.start();
+      if (this.playbackEnabled) {
+        await this.playback.start();
+      }
       await this.transport.connect();
       this.assertCurrent(generation);
       this.setState('AUTHENTICATING');
@@ -270,7 +275,7 @@ export class AudioSessionController {
 
     try {
       const chunk = this.decodeTranslatedAudio(message);
-      if (chunk !== null && this.playback.enqueueAudio(chunk)) {
+      if (this.playbackEnabled && chunk !== null && this.playback.enqueueAudio(chunk)) {
         this.receivedChunks += 1;
       }
       this.publishDiagnostics();

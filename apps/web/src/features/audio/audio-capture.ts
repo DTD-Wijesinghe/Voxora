@@ -125,7 +125,10 @@ export class MicrophoneAudioCapture {
       this.assertCurrent(generation);
 
       context = new AudioContext();
-      await context.audioWorklet.addModule(new URL('./capture-worklet.ts', import.meta.url));
+      // Keep this as a normal public JavaScript asset. Vite can inline a small
+      // TypeScript URL as a data: resource, but AudioWorklet rejects that URL
+      // because it does not have a JavaScript MIME type in production.
+      await context.audioWorklet.addModule('/capture-worklet.js');
       this.assertCurrent(generation);
 
       const resampler = new StreamingResampler(context.sampleRate);
