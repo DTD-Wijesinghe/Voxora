@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { BrandMark } from '../components/BrandMark';
-import { login, register, type AuthSession } from '../lib/api';
+import { ApiError, login, register, type AuthSession } from '../lib/api';
 
 interface LoginPageProps { onBack: () => void; onAuthenticated: (session: AuthSession) => void; }
 
@@ -20,7 +20,10 @@ export function LoginPage({ onBack, onAuthenticated }: LoginPageProps) {
     if (mode === 'register' && password !== confirmPassword) { setError('Passwords do not match.'); return; }
     setLoading(true);
     try { onAuthenticated(mode === 'register' ? await register({ email, password, displayName }) : await login({ email, password, displayName })); }
-    catch { setError(mode === 'register' ? 'We could not create this account.' : 'The email or password is incorrect.'); }
+    catch (submissionError) {
+      if (submissionError instanceof ApiError) setError(submissionError.message);
+      else setError(mode === 'register' ? 'We could not create this account. Check your connection and try again.' : 'The email or password is incorrect.');
+    }
     finally { setLoading(false); }
   }
 

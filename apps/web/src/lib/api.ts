@@ -5,6 +5,18 @@ export interface AuthSession { token: string; user: { role: 'admin' | 'user'; em
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 
+export class ApiError extends Error {
+  public readonly status: number;
+  public readonly code?: string;
+
+  public constructor(status: number, message: string, code?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export async function login(input: { email: string; password: string; displayName?: string }): Promise<AuthSession> {
   return request<AuthSession>('/api/auth/login', { method: 'POST', body: JSON.stringify(input) });
 }
@@ -22,7 +34,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   });
-  if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+    let code: string | undefined;
+    try {
+      const body = await response.json() as { message?: string; code?: string };
+      message = body.message ?? message;
+      code = body.code;
+    } catch { /* Keep the status message for non-JSON responses. */ }
+    throw new ApiError(response.status, message, code);
+  }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -52,6 +74,7 @@ export async function joinSession(input: CreateSessionRequest & { joinCode: stri
     });
     return { session, isMock: false };
   } catch (error) {
+    if (error instanceof ApiError) throw error;
     console.warn('API join session failed, falling back to local session:', error);
     return { session: createMockSession(input, input.joinCode.toUpperCase()), isMock: true };
   }
