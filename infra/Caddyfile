@@ -1,0 +1,4 @@
+16-170-227-160.nip.io {
+  encode gzip
+  reverse_proxy voxora-web:80
+}
