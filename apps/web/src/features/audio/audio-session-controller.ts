@@ -87,8 +87,10 @@ export class AudioSessionController {
     });
 
     const microphone = options.microphone ?? new MicrophoneManager();
-    this.capture = new MicrophoneAudioCapture(microphone, (chunk) =>
-      this.forwardMicrophoneChunk(chunk),
+    this.capture = new MicrophoneAudioCapture(
+      microphone,
+      (chunk) => this.forwardMicrophoneChunk(chunk),
+      (error) => this.reportError(error),
     );
     this.transport = new WebSocketAudioTransport({
       url: options.url,

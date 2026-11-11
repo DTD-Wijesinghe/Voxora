@@ -11,7 +11,7 @@ export function HomePage({ onJoin, onLogin }: HomePageProps) {
       <header className="topbar">
         <BrandMark />
         <span className="topbar__tag">Live translation, made human</span>
-        <button className="button button--ghost button--small" type="button" onClick={onLogin}>Login</button>
+        <button className="button button--ghost button--small" type="button" onClick={onLogin}>Login / Register</button>
         <button className="button button--ghost topbar__action" type="button" onClick={onJoin}>Join a session</button>
       </header>
       <main className="hero">

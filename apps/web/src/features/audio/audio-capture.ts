@@ -28,12 +28,15 @@ export interface AudioCaptureDiagnostics {
   lastSequence: number | null;
 }
 
+export type AudioCaptureErrorCallback = (error: AudioCaptureError) => void;
+
 export class MicrophoneAudioCapture {
   private readonly microphone: MicrophoneManager;
   private readonly onChunk: AudioChunkCallback;
   private context: AudioContext | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private worklet: AudioWorkletNode | null = null;
+  private silentMonitor: GainNode | null = null;
   private resampler: StreamingResampler | null = null;
   private chunker: PcmChunker | null = null;
   private pendingStart: Promise<void> | null = null;
@@ -44,10 +47,16 @@ export class MicrophoneAudioCapture {
     chunkCount: 0,
     lastSequence: null,
   };
+  private readonly onError?: AudioCaptureErrorCallback;
 
-  public constructor(microphone: MicrophoneManager, onChunk: AudioChunkCallback) {
+  public constructor(
+    microphone: MicrophoneManager,
+    onChunk: AudioChunkCallback,
+    onError?: AudioCaptureErrorCallback,
+  ) {
     this.microphone = microphone;
     this.onChunk = onChunk;
+    this.onError = onError;
   }
 
   public async start(): Promise<void> {
@@ -135,6 +144,9 @@ export class MicrophoneAudioCapture {
         channelCountMode: 'explicit',
       });
       worklet = workletNode;
+      const silentMonitor = context.createGain();
+      silentMonitor.gain.value = 0;
+      this.silentMonitor = silentMonitor;
 
       workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
         if (!this.isCurrent(generation) || this.muted) {
@@ -148,18 +160,27 @@ export class MicrophoneAudioCapture {
           return;
         }
 
+        const captureError = new AudioCaptureError(
+          'unavailable',
+          'The browser audio processor stopped. Check microphone permissions and try again.',
+        );
+        this.onError?.(captureError);
         this.cleanup();
         this.microphone.stop();
         this.resetBuffers();
       };
       sourceNode.connect(workletNode);
-      workletNode.connect(context.destination);
+      // Keep the worklet connected so browsers continue processing it, but never
+      // route the microphone back to the speakers (which causes feedback).
+      workletNode.connect(silentMonitor);
+      silentMonitor.connect(context.destination);
       await context.resume();
       this.assertCurrent(generation);
 
       this.context = context;
       this.source = source;
       this.worklet = worklet;
+      this.silentMonitor = silentMonitor;
       this.resampler = resampler;
       this.chunker = chunker;
       this.diagnostics = {
@@ -173,6 +194,8 @@ export class MicrophoneAudioCapture {
     } catch (error: unknown) {
       worklet?.port.close();
       worklet?.disconnect();
+      this.silentMonitor?.disconnect();
+      this.silentMonitor = null;
       source?.disconnect();
       if (context !== null) {
         await context.close().catch(() => undefined);
@@ -221,8 +244,10 @@ export class MicrophoneAudioCapture {
   private cleanup(): void {
     this.worklet?.port.close();
     this.worklet?.disconnect();
+    this.silentMonitor?.disconnect();
     this.source?.disconnect();
     this.worklet = null;
+    this.silentMonitor = null;
     this.source = null;
     this.resampler = null;
     this.chunker = null;
