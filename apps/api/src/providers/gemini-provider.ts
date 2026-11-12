@@ -86,7 +86,7 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
   const maxBufferedChunks = options.maxBufferedChunks ?? 20;
 
   return {
-    async start({ targetLanguage, onEvent }) {
+    async start({ targetLanguage, sourceLanguage, sessionMode, onEvent }) {
       if (!BCP47_PATTERN.test(targetLanguage)) {
         throw new TranslationProviderError(
           'UNSUPPORTED_LANGUAGE',
@@ -102,6 +102,11 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
       let current: LiveSession | undefined;
       let resumeHandle: string | undefined;
       const pendingAudio: ArrayBuffer[] = [];
+      const inputLanguageCodes = sourceLanguage
+        ? sessionMode === 'sinhala'
+          ? ['si']
+          : [...new Set([sourceLanguage, 'si', 'en', 'ta', 'es', 'fr', 'de', 'ja'])]
+        : undefined;
 
       function handleMessage(message: LiveServerMessage): void {
         if (message.setupComplete) onEvent({ type: 'status', status: 'live' });
@@ -143,7 +148,7 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
             model,
             config: {
               responseModalities: [Modality.AUDIO],
-              inputAudioTranscription: {},
+              inputAudioTranscription: inputLanguageCodes ? { languageCodes: inputLanguageCodes } : {},
               outputAudioTranscription: {},
               translationConfig: { targetLanguageCode: targetLanguage },
               sessionResumption: resumeHandle ? { handle: resumeHandle } : {},

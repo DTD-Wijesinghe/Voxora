@@ -3,7 +3,7 @@ import { createTranslationProvider } from '../../providers/index.js';
 import { findSession } from '../sessions/routes.js';
 
 interface AudioPeer { socket: any; participantId: string; provider: Awaited<ReturnType<ReturnType<typeof createTranslationProvider>['start']>>; }
-interface AudioHello { type: 'audio_session_hello'; protocol: 'voxora-audio-v1'; sessionId: string; participantId: string; targetLanguage: string; }
+interface AudioHello { type: 'audio_session_hello'; protocol: 'voxora-audio-v1'; sessionId: string; participantId: string; targetLanguage: string; sourceLanguage?: string; sessionMode?: 'sinhala' | 'mix'; }
 
 const rooms = new Map<string, Set<AudioPeer>>();
 const MAGIC = [0x56, 0x4f, 0x58, 0x31];
@@ -47,8 +47,11 @@ export async function registerAudioRoutes(app: FastifyInstance): Promise<void> {
           if (hello.type !== 'audio_session_hello' || hello.protocol !== 'voxora-audio-v1' || !hello.sessionId || !hello.participantId || !hello.targetLanguage) throw new Error('Invalid audio handshake.');
           const session = findSession(hello.sessionId);
           if (!session || session.status === 'ended' || !session.participants.some((participant) => participant.id === hello.participantId)) throw new Error('Audio session is not authorized.');
+          const sourceLanguage = session.mode === 'sinhala' ? 'si' : (hello.sourceLanguage ?? session.sourceLanguage ?? 'si');
           const provider = await createTranslationProvider().start({
             targetLanguage: hello.targetLanguage,
+            sourceLanguage,
+            sessionMode: session.mode ?? hello.sessionMode ?? 'mix',
             onEvent: (event) => {
               if (event.type === 'audio') sendJson(socket, { type: 'audio', sequence: event.sequence, sampleRate: event.sampleRate, pcm16: toBase64(event.pcm16) });
               else if (event.type === 'input_transcript') sendJson(socket, { type: 'transcript', direction: 'source', text: event.text, final: event.final });

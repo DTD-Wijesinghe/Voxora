@@ -58,6 +58,8 @@ export interface CreateSessionRequest {
 export interface TranslationProvider {
   start(input: {
     targetLanguage: LanguageCode;
+    sourceLanguage?: LanguageCode;
+    sessionMode?: SessionMode;
     onEvent: (event: TranslationEvent) => void;
   }): Promise<{ sendAudio: (pcm16: ArrayBuffer) => Promise<void>; close: () => Promise<void> }>;
 }

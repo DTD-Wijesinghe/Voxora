@@ -57,6 +57,32 @@ describe('createGeminiTranslationProvider', () => {
     });
   });
 
+  it('uses a strict Sinhala hint in Sinhala mode', async () => {
+    const gemini = fakeGemini();
+    await createGeminiTranslationProvider({ connect: gemini.connect }).start({
+      targetLanguage: 'ta',
+      sourceLanguage: 'si',
+      sessionMode: 'sinhala',
+      onEvent: () => {},
+    });
+    expect(gemini.params?.config).toMatchObject({
+      inputAudioTranscription: { languageCodes: ['si'] },
+    });
+  });
+
+  it('prioritizes the selected language while keeping mix mode multilingual', async () => {
+    const gemini = fakeGemini();
+    await createGeminiTranslationProvider({ connect: gemini.connect }).start({
+      targetLanguage: 'ta',
+      sourceLanguage: 'si',
+      sessionMode: 'mix',
+      onEvent: () => {},
+    });
+    expect(gemini.params?.config).toMatchObject({
+      inputAudioTranscription: { languageCodes: ['si', 'en', 'ta', 'es', 'fr', 'de', 'ja'] },
+    });
+  });
+
   it('sends audio as base64 PCM16 at 16 kHz', async () => {
     const { gemini, session } = await startSession();
     await session.sendAudio(new Uint8Array([1, 2, 3, 4]).buffer);

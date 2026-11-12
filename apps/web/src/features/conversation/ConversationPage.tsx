@@ -34,7 +34,7 @@ export function ConversationPage({ session, role, onLeave }: ConversationPagePro
     const nextController = new AudioSessionController({
       url: websocketUrl,
       encodeChunk: encodeProposedInputAudio,
-      createHandshake: () => createProposedAudioHandshake({ sessionId: session.id, participantId, targetLanguage: listeningLanguage, authentication: 'backend-required', sessionMode }),
+      createHandshake: () => createProposedAudioHandshake({ sessionId: session.id, participantId, targetLanguage: listeningLanguage, sourceLanguage: session.sourceLanguage ?? 'si', authentication: 'backend-required', sessionMode }),
       playback: { sampleRate: 24_000, channelCount: 1, byteOrder: 'little-endian' },
       playbackEnabled: !isHost,
       captureEnabled: isHost,
