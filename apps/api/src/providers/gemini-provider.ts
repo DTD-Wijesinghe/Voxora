@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { GoogleGenAI, Modality } from '@google/genai';
+import { EndSensitivity, GoogleGenAI, Modality, StartSensitivity } from '@google/genai';
 import type { LiveConnectParameters, LiveServerMessage, Session } from '@google/genai';
 import type { TranslationEvent, TranslationProvider } from '@voxora/contracts';
 import { TranslationProviderError } from './errors.js';
@@ -151,6 +151,15 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
               inputAudioTranscription: inputLanguageCodes ? { languageCodes: inputLanguageCodes } : {},
               outputAudioTranscription: {},
               translationConfig: { targetLanguageCode: targetLanguage },
+              realtimeInputConfig: {
+                automaticActivityDetection: {
+                  disabled: false,
+                  startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
+                  endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
+                  prefixPaddingMs: 120,
+                  silenceDurationMs: 450,
+                },
+              },
               sessionResumption: resumeHandle ? { handle: resumeHandle } : {},
             },
             callbacks: {

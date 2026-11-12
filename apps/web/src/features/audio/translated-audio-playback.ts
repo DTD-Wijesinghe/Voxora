@@ -209,7 +209,7 @@ export class TranslatedAudioPlayback {
         throw new Error('This browser does not support Web Audio playback.');
       }
 
-      context = new AudioContext();
+      context = new AudioContext({ latencyHint: 'interactive' });
       const gain = context.createGain();
       gain.gain.value = this.muted ? 0 : 1;
       gain.connect(context.destination);

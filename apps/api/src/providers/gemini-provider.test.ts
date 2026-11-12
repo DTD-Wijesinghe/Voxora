@@ -54,6 +54,13 @@ describe('createGeminiTranslationProvider', () => {
       translationConfig: { targetLanguageCode: 'si' },
       inputAudioTranscription: {},
       outputAudioTranscription: {},
+      realtimeInputConfig: {
+        automaticActivityDetection: {
+          disabled: false,
+          prefixPaddingMs: 120,
+          silenceDurationMs: 450,
+        },
+      },
     });
   });
 
