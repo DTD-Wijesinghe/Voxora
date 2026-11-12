@@ -146,4 +146,22 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       return reply.send(session);
     },
   );
+
+  // Remove an attendee from the live participant list when they leave.
+  app.delete<{ Params: { sessionId: string; participantId: string } }>(
+    '/api/sessions/:sessionId/participants/:participantId',
+    async (request, reply) => {
+      const session = adminSessions.get(request.params.sessionId);
+      if (!session) return reply.code(404).send({ code: 'SESSION_NOT_FOUND', message: 'Session not found' });
+      const participant = session.participants.find((candidate) => candidate.id === request.params.participantId);
+      if (!participant) return reply.code(404).send({ code: 'PARTICIPANT_NOT_FOUND', message: 'Participant not found' });
+      if (participant.isHost) return reply.code(400).send({ code: 'HOST_CANNOT_LEAVE', message: 'The organizer cannot leave this session.' });
+
+      session.participants = session.participants.filter((candidate) => candidate.id !== participant.id);
+      if (session.participants.every((candidate) => candidate.isHost) && session.status === 'live') session.status = 'connecting';
+      persistAdminSessions();
+      appendAudit({ action: 'session.attendee_left', sessionId: session.id, metadata: { participantId: participant.id } });
+      return reply.code(204).send();
+    },
+  );
 }

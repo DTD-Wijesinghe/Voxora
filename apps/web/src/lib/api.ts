@@ -78,6 +78,10 @@ export async function joinSession(input: CreateSessionRequest & { joinCode: stri
   return { session, isMock: false };
 }
 
+export async function leaveSession(sessionId: string, participantId: string): Promise<void> {
+  await request<void>(`/api/sessions/${encodeURIComponent(sessionId)}/participants/${encodeURIComponent(participantId)}`, { method: 'DELETE' });
+}
+
 // Provisional until the backend exposes a participant-preference endpoint.
 export async function updateLanguage(_sessionId: string, _language: string): Promise<void> {
   return Promise.resolve();
