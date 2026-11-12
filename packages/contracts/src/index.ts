@@ -61,7 +61,7 @@ export interface TranslationProvider {
     sourceLanguage?: LanguageCode;
     sessionMode?: SessionMode;
     onEvent: (event: TranslationEvent) => void;
-  }): Promise<{ sendAudio: (pcm16: ArrayBuffer) => Promise<void>; close: () => Promise<void> }>;
+  }): Promise<{ sendAudio: (pcm16: ArrayBuffer) => Promise<void>; endAudioStream?: () => Promise<void>; close: () => Promise<void> }>;
 }
 
 /**

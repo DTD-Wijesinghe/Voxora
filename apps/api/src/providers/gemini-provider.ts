@@ -270,6 +270,11 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
           }
         },
 
+        async endAudioStream() {
+          if (stopped) return;
+          current?.sendRealtimeInput({ audioStreamEnd: true });
+        },
+
         async close() {
           if (stopped) return;
           stopped = true;

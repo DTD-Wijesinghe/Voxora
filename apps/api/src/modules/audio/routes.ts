@@ -68,11 +68,17 @@ export async function registerAudioRoutes(app: FastifyInstance): Promise<void> {
           return;
         }
 
-        const frame = decodeInputFrame(raw);
         const room = roomId ? rooms.get(roomId) : undefined;
         const recipients = room ? Array.from(room).filter((candidate) => candidate !== peer) : [];
         // In a one-person local test, loop the audio back so the complete path can be verified.
         const targets = recipients.length > 0 ? recipients : [peer];
+        if (raw[0] === 0x7b) {
+          const control = JSON.parse(raw.toString()) as { type?: string };
+          if (control.type !== 'audio_stream_end') throw new Error('Invalid audio control message.');
+          await Promise.all(targets.map((target) => target.provider.endAudioStream?.()));
+          return;
+        }
+        const frame = decodeInputFrame(raw);
         await Promise.all(targets.map((target) => target.provider.sendAudio(frame.pcm16)));
       } catch (error) {
         app.log.warn({ err: error }, 'Audio WebSocket session closed after a protocol/provider error.');

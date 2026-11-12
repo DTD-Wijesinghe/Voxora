@@ -62,6 +62,11 @@ export function createMockTranslationProvider(
           }
         },
 
+        async endAudioStream() {
+          // The mock provider has no server-side VAD, but supports the same
+          // control message as the live provider.
+        },
+
         async close() {
           if (closed) return;
           closed = true;

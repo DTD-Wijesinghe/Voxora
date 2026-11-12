@@ -81,6 +81,7 @@ export class AudioSessionController {
   private speakerMuted = false;
   private stopping = false;
   private silenceTailChunks = 0;
+  private speechStreamActive = false;
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -137,6 +138,7 @@ export class AudioSessionController {
     this.lastError = null;
     this.handshakeComplete = false;
     this.silenceTailChunks = 0;
+    this.speechStreamActive = false;
     this.setState('CONNECTING');
     const pending = this.startSession(generation);
     this.pendingStart = pending;
@@ -156,6 +158,7 @@ export class AudioSessionController {
     this.handshakeComplete = false;
     this.capture.stop();
     this.silenceTailChunks = 0;
+    this.speechStreamActive = false;
     this.transport.clearPendingChunks();
     this.transport.disconnect();
     this.playback.stop();
@@ -167,7 +170,9 @@ export class AudioSessionController {
       return;
     }
     this.capture.mute();
+    this.endAudioStream();
     this.silenceTailChunks = 0;
+    this.speechStreamActive = false;
     this.microphoneMuted = true;
     this.setState('MIC_MUTED');
   }
@@ -349,17 +354,29 @@ export class AudioSessionController {
       return;
     }
     if (!this.containsSpeech(chunk.pcm16)) {
-      if (this.silenceTailChunks === 0) return;
+      if (this.silenceTailChunks === 0) {
+        if (this.speechStreamActive) {
+          this.endAudioStream();
+          this.speechStreamActive = false;
+        }
+        return;
+      }
       this.silenceTailChunks -= 1;
     } else {
       // Keep a short tail so Gemini can detect the end of the utterance, then
       // stop forwarding silence instead of repeatedly extending old speech.
       this.silenceTailChunks = SILENCE_TAIL_CHUNKS;
+      this.speechStreamActive = true;
     }
     if (this.transport.sendChunk(chunk)) {
       this.sentChunks += 1;
       this.publishDiagnostics();
     }
+  }
+
+  private endAudioStream(): void {
+    if (!this.handshakeComplete || this.connectionState !== 'OPEN') return;
+    this.transport.sendPayload(JSON.stringify({ type: 'audio_stream_end' }));
   }
 
   private containsSpeech(pcm16: ArrayBuffer): boolean {
