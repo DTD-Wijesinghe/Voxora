@@ -52,7 +52,7 @@ function RoutedApp() {
   }
 
   if (page === 'conversation' && session) {
-    return <ConversationPage session={session} role={conversationRole ?? 'attendee'} onLeave={() => { setSession(null); setConversationRole(null); setPage('home'); }} />;
+    return <ConversationPage session={session} role={conversationRole ?? 'attendee'} onLeave={() => { const wasOrganizer = conversationRole === 'organizer'; setSession(null); setConversationRole(null); setPage(wasOrganizer ? 'admin' : 'home'); }} />;
   }
 
   return (
