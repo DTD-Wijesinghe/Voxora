@@ -9,6 +9,7 @@ import { languageLabel } from '../../lib/languages';
 import { leaveSession, updateLanguage } from '../../lib/api';
 import { AudioSessionController, type AudioSessionDiagnostics } from '../audio/audio-session-controller';
 import { createProposedAudioHandshake, encodeProposedInputAudio } from '../audio/audio-session-protocol-v1';
+import { applyTranscriptUpdate } from './caption-utils';
 import type { Caption, UiSessionStatus } from '../../types';
 
 interface ConversationPageProps { session: Session; role: 'organizer' | 'attendee'; onLeave: () => void; }
@@ -40,7 +41,7 @@ export function ConversationPage({ session, role, onLeave }: ConversationPagePro
       captureEnabled: isHost,
       onStateChange: setDiagnostics,
       onError: (audioError) => setError(audioError.message),
-      onTranscript: (transcript) => setCaptions((current) => [...current.slice(-19), { id: crypto.randomUUID(), speakerName: transcript.direction === 'translated' ? 'Translated voice' : 'Participant', language: transcript.direction === 'translated' ? languageLabel(language) : 'Original', text: transcript.text, final: transcript.final, direction: transcript.direction }]),
+      onTranscript: (transcript) => setCaptions((current) => applyTranscriptUpdate(current, { ...transcript, speakerName: transcript.direction === 'translated' ? 'Translated voice' : 'Organizer', language: transcript.direction === 'translated' ? languageLabel(language) : 'Original' })),
     });
     controller.current = nextController;
     if (!isHost) {

@@ -2,10 +2,12 @@ import type { FastifyInstance } from 'fastify';
 import { createTranslationProvider } from '../../providers/index.js';
 import { findSession } from '../sessions/routes.js';
 
-interface AudioPeer { socket: any; participantId: string; provider: Awaited<ReturnType<ReturnType<typeof createTranslationProvider>['start']>>; }
+interface AudioPeer { socket: any; participantId: string; isHost: boolean; provider: Awaited<ReturnType<ReturnType<typeof createTranslationProvider>['start']>>; }
 interface AudioHello { type: 'audio_session_hello'; protocol: 'voxora-audio-v1'; sessionId: string; participantId: string; targetLanguage: string; sourceLanguage?: string; sessionMode?: 'sinhala' | 'mix'; }
 
-const rooms = new Map<string, Set<AudioPeer>>();
+interface AudioRoom { peers: Set<AudioPeer>; sourceCaptionPeerId?: string; }
+
+const rooms = new Map<string, AudioRoom>();
 const MAGIC = [0x56, 0x4f, 0x58, 0x31];
 const FRAME_HEADER_BYTES = 8;
 
@@ -34,8 +36,9 @@ export async function registerAudioRoutes(app: FastifyInstance): Promise<void> {
       closed = true;
       if (roomId && peer) {
         const room = rooms.get(roomId);
-        room?.delete(peer);
-        if (room && room.size === 0) rooms.delete(roomId);
+        room?.peers.delete(peer);
+        if (room?.sourceCaptionPeerId === peer.participantId) room.sourceCaptionPeerId = undefined;
+        if (room && room.peers.size === 0) rooms.delete(roomId);
       }
       await peer?.provider.close().catch(() => undefined);
     };
@@ -47,6 +50,8 @@ export async function registerAudioRoutes(app: FastifyInstance): Promise<void> {
           if (hello.type !== 'audio_session_hello' || hello.protocol !== 'voxora-audio-v1' || !hello.sessionId || !hello.participantId || !hello.targetLanguage) throw new Error('Invalid audio handshake.');
           const session = findSession(hello.sessionId);
           if (!session || session.status === 'ended' || !session.participants.some((participant) => participant.id === hello.participantId)) throw new Error('Audio session is not authorized.');
+          const participant = session.participants.find((candidate) => candidate.id === hello.participantId);
+          if (!participant) throw new Error('Audio session participant is not authorized.');
           const sourceLanguage = session.mode === 'sinhala' ? 'si' : (hello.sourceLanguage ?? session.sourceLanguage ?? 'si');
           const provider = await createTranslationProvider().start({
             targetLanguage: hello.targetLanguage,
@@ -54,22 +59,38 @@ export async function registerAudioRoutes(app: FastifyInstance): Promise<void> {
             sessionMode: session.mode ?? hello.sessionMode ?? 'mix',
             onEvent: (event) => {
               if (event.type === 'audio') sendJson(socket, { type: 'audio', sequence: event.sequence, sampleRate: event.sampleRate, pcm16: toBase64(event.pcm16) });
-              else if (event.type === 'input_transcript') sendJson(socket, { type: 'transcript', direction: 'source', text: event.text, final: event.final });
+              else if (event.type === 'input_transcript') {
+                const caption = { type: 'transcript', direction: 'source' as const, text: event.text, final: event.final };
+                sendJson(socket, caption);
+                // Gemini transcription is produced by attendee translation providers.
+                // Forward one provider's source line to organizer sockets as well.
+                if (!participant.isHost) {
+                  const room = roomId ? rooms.get(roomId) : undefined;
+                  if (room && (!room.sourceCaptionPeerId || !Array.from(room.peers).some((candidate) => candidate.participantId === room.sourceCaptionPeerId))) {
+                    room.sourceCaptionPeerId = participant.id;
+                  }
+                  if (room?.sourceCaptionPeerId === participant.id) {
+                    for (const organizer of room.peers) {
+                      if (organizer.isHost) sendJson(organizer.socket, caption);
+                    }
+                  }
+                }
+              }
               else if (event.type === 'output_transcript') sendJson(socket, { type: 'transcript', direction: 'translated', text: event.text, final: event.final });
               else sendJson(socket, event);
             },
           });
           roomId = session.id;
-          peer = { socket, participantId: hello.participantId, provider };
-          const room = rooms.get(roomId) ?? new Set<AudioPeer>();
-          room.add(peer);
+          peer = { socket, participantId: hello.participantId, isHost: participant.isHost, provider };
+          const room = rooms.get(roomId) ?? { peers: new Set<AudioPeer>() };
+          room.peers.add(peer);
           rooms.set(roomId, room);
           sendJson(socket, { type: 'audio_session_ready', protocol: 'voxora-audio-v1' });
           return;
         }
 
         const room = roomId ? rooms.get(roomId) : undefined;
-        const recipients = room ? Array.from(room).filter((candidate) => candidate !== peer) : [];
+        const recipients = room ? Array.from(room.peers).filter((candidate) => candidate !== peer) : [];
         // In a one-person local test, loop the audio back so the complete path can be verified.
         const targets = recipients.length > 0 ? recipients : [peer];
         if (raw[0] === 0x7b) {
