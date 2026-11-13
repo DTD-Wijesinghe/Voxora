@@ -75,6 +75,9 @@ describe('createGeminiTranslationProvider', () => {
     expect(gemini.params?.config).toMatchObject({
       inputAudioTranscription: { languageCodes: ['si'] },
     });
+    expect(gemini.params?.config?.systemInstruction).toMatchObject({
+      parts: [{ text: expect.stringContaining('Sinhala only') }],
+    });
   });
 
   it('prioritizes the selected language while keeping mix mode multilingual', async () => {

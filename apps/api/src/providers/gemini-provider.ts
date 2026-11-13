@@ -148,6 +148,9 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
             model,
             config: {
               responseModalities: [Modality.AUDIO],
+              systemInstruction: {
+                parts: [{ text: transcriptionInstruction(sessionMode, sourceLanguage) }],
+              },
               inputAudioTranscription: inputLanguageCodes ? { languageCodes: inputLanguageCodes } : {},
               outputAudioTranscription: {},
               translationConfig: { targetLanguageCode: targetLanguage },
@@ -351,6 +354,26 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
 
 function isFinal(text: string, finished: boolean | undefined): boolean {
   return finished ?? SENTENCE_END.test(text);
+}
+
+function transcriptionInstruction(sessionMode: 'sinhala' | 'mix' | undefined, sourceLanguage: string | undefined): string {
+  if (sessionMode === 'sinhala' || sourceLanguage === 'si') {
+    return [
+      'This is a live voice translation session.',
+      'The speaker input is Sinhala only.',
+      'Recognize the spoken audio as Sinhala and keep the input transcription in Sinhala script.',
+      'Do not guess Japanese, Tamil, or another language when the speaker is speaking Sinhala.',
+      'Keep the translation output in the requested target language.',
+    ].join(' ');
+  }
+
+  return [
+    'This is a live voice translation session.',
+    'Detect the spoken input language for each utterance.',
+    'Keep the input transcription faithful to the detected language and its original script.',
+    'Do not invent text in a different language when the audio is unclear.',
+    'Keep the translation output in the requested target language.',
+  ].join(' ');
 }
 
 /** Reads the rate from a MIME type such as "audio/pcm;rate=24000". */
