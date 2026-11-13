@@ -156,8 +156,10 @@ export function createGeminiTranslationProvider(options: GeminiProviderOptions):
                   disabled: false,
                   startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
                   endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
-                  prefixPaddingMs: 120,
-                  silenceDurationMs: 450,
+                  // End turns quickly for live translation, but retain enough
+                  // tail silence to avoid clipping the final syllable.
+                  prefixPaddingMs: 160,
+                  silenceDurationMs: 300,
                 },
               },
               sessionResumption: resumeHandle ? { handle: resumeHandle } : {},

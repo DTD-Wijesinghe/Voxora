@@ -32,8 +32,11 @@ export interface TranslatedAudioPlaybackDiagnostics {
   expectedSequence: number | null;
 }
 
-const DEFAULT_MAX_BUFFERED_CHUNKS = 8;
-const DEFAULT_MISSING_SEQUENCE_WAIT_MS = 120;
+// Gemini may deliver several translated chunks in a burst. Keep enough room
+// for that burst without adding a fixed startup delay; contiguous chunks are
+// scheduled immediately by scheduleAvailable().
+const DEFAULT_MAX_BUFFERED_CHUNKS = 24;
+const DEFAULT_MISSING_SEQUENCE_WAIT_MS = 250;
 
 export class TranslatedAudioPlayback {
   private readonly sampleRate: number;

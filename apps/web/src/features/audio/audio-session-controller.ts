@@ -14,8 +14,10 @@ import {
   isProposedAudioHandshakeAck,
 } from './audio-session-protocol-v1';
 
-const SPEECH_RMS_THRESHOLD = 0.012;
-const SILENCE_TAIL_CHUNKS = 3;
+// Keep the gate sensitive enough for quiet speakers while requiring a short
+// silence tail before ending a Gemini turn. Each chunk is 100 ms at 16 kHz.
+const SPEECH_RMS_THRESHOLD = 0.008;
+const SILENCE_TAIL_CHUNKS = 2;
 const MAX_TRANSPORT_RECONNECTS = 4;
 const TRANSPORT_RECONNECT_DELAY_MS = 750;
 

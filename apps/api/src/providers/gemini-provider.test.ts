@@ -57,8 +57,8 @@ describe('createGeminiTranslationProvider', () => {
       realtimeInputConfig: {
         automaticActivityDetection: {
           disabled: false,
-          prefixPaddingMs: 120,
-          silenceDurationMs: 450,
+          prefixPaddingMs: 160,
+          silenceDurationMs: 300,
         },
       },
     });
